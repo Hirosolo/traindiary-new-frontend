@@ -6,7 +6,17 @@ import { BlurText } from "@/components/ui/blur-text";
 import { TextEffect } from "@/components/core/text-effect";
 import { TextLoop } from "@/components/core/text-loop";
 import ClickSpark from "@/components/ui/click-spark";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  ScrollProgress,
+  FadeInOnScroll,
+  Parallax,
+  ScaleOnScroll,
+  RevealOnScroll,
+  StaggerOnScroll,
+  BlurInOnScroll,
+} from "@/components/ui/scroll-animation";
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -29,6 +39,9 @@ export default function LandingPage() {
       easing="ease-out"
       extraScale={1.2}
     >
+      {/* Scroll Progress Indicator */}
+      <ScrollProgress color="#3b82f6" height={3} position="top" />
+
       {/* Welcome Screen */}
       <AnimatePresence>
         {showWelcome && (
@@ -50,8 +63,18 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
+      {/* Aurora Background - covers entire page */}
+      <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden">
+        <AuroraBackground
+          className="!h-full !w-full !bg-transparent dark:!bg-transparent"
+          showRadialGradient={true}
+        >
+          <div />
+        </AuroraBackground>
+      </div>
+
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background-dark/80 backdrop-blur-md border-b border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background-dark/60 backdrop-blur-md border-b border-white/5">
         <div className="max-w-[1440px] mx-auto px-6 md:px-8 h-16 md:h-20 flex items-center justify-between">
           <div className="flex items-center gap-12">
             <a className="text-xl md:text-2xl font-bold font-display tracking-architectural border-non" href="#">
@@ -132,21 +155,13 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative min-h-[90vh] md:min-h-screen flex items-end md:items-center pt-20">
-        <div className="absolute inset-0 z-0">
-          <Image
-            alt="Gym Background"
-            className="w-full h-full object-cover opacity-50 lg:opacity-60 grayscale scale-105"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD11TfhXjV3ZRN9Mh0beejUanfGQP2egzRRVnwysZ_YEUB0macFgiu7SeVwbCAtARyZLzFFsO54SKAEYsopZu4sK6Mvy60hRz4SoMcZr1wUGPAwSzdjTanEO6aUNQWPxUJezjq0COopurGI8yyo2MTIpxHnBBoOBQG8DkVDlcl-FXbmwbOKyC_8TTQzMVUrTdXBTuYBmL4_Ij8NUOL_ZeeNdeiIuK83mDrWsweF0qwqgi_YVjgvAvG0y-l8YWzMlaeZsdcBNpCFwKk"
-            fill
-            priority
-          />
-          <div className="hero-gradient absolute inset-0"></div>
-        </div>
         <div className="container max-w-[1440px] mx-auto px-6 md:px-8 relative z-10 pb-16 md:pb-0">
           <div className="max-w-3xl">
-            <p className="text-primary font-bold tracking-[0.3em] md:tracking-[0.5em] uppercase text-[10px] md:text-xs mb-4 md:mb-6">
-              Built for the dedicated
-            </p>
+            <FadeInOnScroll direction="up" delay={0.2} distance={20}>
+              <p className="text-primary font-bold tracking-[0.3em] md:tracking-[0.5em] uppercase text-[10px] md:text-xs mb-4 md:mb-6">
+                Built for the dedicated
+              </p>
+            </FadeInOnScroll>
             <h1 className="fluid-heading font-bold font-display leading-[0.9] tracking-tighter uppercase mb-4 md:mb-0">
               <TextEffect per="char" preset="blur" delay={0.5} className="block">
                 Welcome to
@@ -155,58 +170,74 @@ export default function LandingPage() {
                 Train Diary
               </TextEffect>
             </h1>
-            <p className="mt-4 md:mt-8 text-base md:text-lg text-text-dim max-w-lg font-light leading-relaxed">
-              <TextLoop interval={4000}>
-                <span>Engineering physical perfection through data-driven performance tracking.</span>
-                <span>Track your workouts with precision and achieve elite-level results.</span>
-                <span>Transform your training with intelligent analytics and insights.</span>
-                <span>Your personal fitness companion for peak performance.</span>
-              </TextLoop>
-            </p>
-            <div className="mt-8 md:mt-12 flex">
-              <button className="group w-full md:w-auto flex items-center justify-between md:justify-start gap-4 border border-white px-8 md:px-10 py-4 md:py-5 hover:bg-white hover:text-black transition-all">
-                <span className="text-xs md:text-sm font-bold uppercase tracking-architectural">Start Training</span>
-                <span className="material-symbols-outlined group-hover:translate-x-2 transition-transform text-2xl md:text-base">
-                  arrow_right_alt
-                </span>
-              </button>
-            </div>
+            <FadeInOnScroll direction="up" delay={0.4} distance={20}>
+              <p className="mt-4 md:mt-8 text-base md:text-lg text-text-dim max-w-lg font-light leading-relaxed">
+                <TextLoop interval={4000}>
+                  <span>Engineering physical perfection through data-driven performance tracking.</span>
+                  <span>Track your workouts with precision and achieve elite-level results.</span>
+                  <span>Transform your training with intelligent analytics and insights.</span>
+                  <span>Your personal fitness companion for peak performance.</span>
+                </TextLoop>
+              </p>
+            </FadeInOnScroll>
+            <FadeInOnScroll direction="up" delay={0.6} distance={20}>
+              <div className="mt-8 md:mt-12 flex">
+                <button className="group w-full md:w-auto flex items-center justify-between md:justify-start gap-4 border border-white px-8 md:px-10 py-4 md:py-5 hover:bg-white hover:text-black transition-all">
+                  <span className="text-xs md:text-sm font-bold uppercase tracking-architectural">Start Training</span>
+                  <span className="material-symbols-outlined group-hover:translate-x-2 transition-transform text-2xl md:text-base">
+                    arrow_right_alt
+                  </span>
+                </button>
+              </div>
+            </FadeInOnScroll>
           </div>
         </div>
       </section>
 
       {/* Main Content */}
-      <main className="relative z-10 bg-background-dark">
+      <main className="relative z-10">
         {/* Precision Section */}
-        <section className="py-16 md:py-32 border-b border-white/5">
+        <section className="py-16 md:py-32 border-b border-white/5 bg-background-dark/80 backdrop-blur-sm">
           <div className="max-w-[1440px] mx-auto px-6 md:px-8">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center">
               <div className="relative group order-2 lg:order-1">
-                <div className="absolute -inset-2 md:-inset-4 border border-white/10 group-hover:border-primary/30 transition-colors"></div>
-                <Image
-                  alt="Tracking Interface"
-                  className="relative w-full aspect-[4/5] object-cover grayscale brightness-75"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzUa0TgPMrtwpmf9XhMJz5TLxZA7qi719mtFlcl8yq7mGIJksTiYxLDT4802DFGe6rcYfHOVumhLVrF6A7Tcb35sXvWBUOJOWeO76ykALDaqy-DZRLLAirGB6PacTWX6e5Ojsw_B1Cj6bg9N8JI5m-SYXPuaVN24oL4UYjsytx6RyWxwHCuvdIk5Cq_nNfNF0IGcivx55cpbif_gbdmBQ6BteuTXhxCODAWYgOywNQlAFMeHyhW3XKEYOUwcT40mOz76EgTbTqlFA"
-                  width={800}
-                  height={1000}
-                />
-                <div className="absolute bottom-6 -right-4 md:bottom-10 md:-right-10 bg-primary px-6 py-6 md:px-8 md:py-8">
-                  <p className="text-3xl md:text-5xl font-bold font-display">98.4%</p>
-                  <p className="text-[8px] md:text-[10px] uppercase font-bold tracking-widest mt-1">Accuracy Rate</p>
-                </div>
+                <ScaleOnScroll startScale={0.95} endScale={1}>
+                  <div className="absolute -inset-2 md:-inset-4 border border-white/10 group-hover:border-primary/30 transition-colors"></div>
+                  <Parallax speed={0.15}>
+                    <Image
+                      alt="Tracking Interface"
+                      className="relative w-full aspect-[4/5] object-cover grayscale brightness-75"
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzUa0TgPMrtwpmf9XhMJz5TLxZA7qi719mtFlcl8yq7mGIJksTiYxLDT4802DFGe6rcYfHOVumhLVrF6A7Tcb35sXvWBUOJOWeO76ykALDaqy-DZRLLAirGB6PacTWX6e5Ojsw_B1Cj6bg9N8JI5m-SYXPuaVN24oL4UYjsytx6RyWxwHCuvdIk5Cq_nNfNF0IGcivx55cpbif_gbdmBQ6BteuTXhxCODAWYgOywNQlAFMeHyhW3XKEYOUwcT40mOz76EgTbTqlFA"
+                      width={800}
+                      height={1000}
+                    />
+                  </Parallax>
+                  <FadeInOnScroll direction="left" delay={0.2} distance={30}>
+                    <div className="absolute bottom-6 -right-4 md:bottom-10 md:-right-10 bg-primary px-6 py-6 md:px-8 md:py-8">
+                      <p className="text-3xl md:text-5xl font-bold font-display">98.4%</p>
+                      <p className="text-[8px] md:text-[10px] uppercase font-bold tracking-widest mt-1">Accuracy Rate</p>
+                    </div>
+                  </FadeInOnScroll>
+                </ScaleOnScroll>
               </div>
               <div className="order-1 lg:order-2">
-                <span className="text-primary text-[10px] md:text-[11px] font-bold uppercase tracking-[0.3em]">
-                  01. Precision
-                </span>
-                <h2 className="text-3xl md:text-5xl font-bold font-display uppercase mt-3 md:mt-4 mb-6 md:mb-8 tracking-tight">
-                  Unrivaled Tracking
-                </h2>
-                <p className="text-text-dim text-left md:text-justify leading-relaxed text-base md:text-lg font-light max-w-xl">
-                  Leave nothing to chance. Our high-performance analytics engine captures every metric of your
-                  progression—from volume distribution to peak force output.
-                </p>
-                <div className="mt-8 md:mt-12 space-y-4 md:space-y-6">
+                <FadeInOnScroll direction="up" delay={0.1} distance={20}>
+                  <span className="text-primary text-[10px] md:text-[11px] font-bold uppercase tracking-[0.3em]">
+                    01. Precision
+                  </span>
+                </FadeInOnScroll>
+                <BlurInOnScroll delay={0.2}>
+                  <h2 className="text-3xl md:text-5xl font-bold font-display uppercase mt-3 md:mt-4 mb-6 md:mb-8 tracking-tight">
+                    Unrivaled Tracking
+                  </h2>
+                </BlurInOnScroll>
+                <FadeInOnScroll direction="up" delay={0.3}>
+                  <p className="text-text-dim text-left md:text-justify leading-relaxed text-base md:text-lg font-light max-w-xl">
+                    Leave nothing to chance. Our high-performance analytics engine captures every metric of your
+                    progression—from volume distribution to peak force output.
+                  </p>
+                </FadeInOnScroll>
+                <StaggerOnScroll staggerDelay={0.15} direction="up" className="mt-8 md:mt-12 space-y-4 md:space-y-6">
                   <div className="flex items-center gap-4 border-b border-white/10 pb-4">
                     <span className="text-primary font-display font-bold text-lg md:text-xl">01</span>
                     <span className="text-[10px] md:text-sm uppercase font-bold tracking-widest">
@@ -217,84 +248,104 @@ export default function LandingPage() {
                     <span className="text-primary font-display font-bold text-lg md:text-xl">02</span>
                     <span className="text-[10px] md:text-sm uppercase font-bold tracking-widest">Fatigue Monitoring</span>
                   </div>
-                </div>
+                </StaggerOnScroll>
               </div>
             </div>
           </div>
         </section>
 
         {/* Nutrition Section */}
-        <section className="py-16 md:py-32">
+        <section className="py-16 md:py-32 bg-background-dark/80 backdrop-blur-sm">
           <div className="max-w-[1440px] mx-auto px-6 md:px-8">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center">
               <div className="order-2 lg:order-1">
-                <span className="text-primary text-[10px] md:text-[11px] font-bold uppercase tracking-[0.3em]">
-                  02. Fueling
-                </span>
-                <h2 className="text-3xl md:text-5xl font-bold font-display uppercase mt-3 md:mt-4 mb-6 md:mb-8 tracking-tight">
-                  Elite Nutrition
-                </h2>
-                <p className="text-text-dim text-left md:text-justify leading-relaxed text-base md:text-lg font-light max-w-xl">
-                  Fuel your potential with algorithmic nutrition planning. Our system adapts your macronutrient ratios
-                  based on daily exertion.
-                </p>
-                <button className="mt-8 md:mt-12 group flex items-center gap-3 text-white">
-                  <span className="text-xs md:text-sm font-bold uppercase tracking-widest border-b-2 border-primary pb-1">
-                    View Meal Architect
+                <FadeInOnScroll direction="up" delay={0.1} distance={20}>
+                  <span className="text-primary text-[10px] md:text-[11px] font-bold uppercase tracking-[0.3em]">
+                    02. Fueling
                   </span>
-                  <span className="material-symbols-outlined text-primary">trending_flat</span>
-                </button>
+                </FadeInOnScroll>
+                <BlurInOnScroll delay={0.2}>
+                  <h2 className="text-3xl md:text-5xl font-bold font-display uppercase mt-3 md:mt-4 mb-6 md:mb-8 tracking-tight">
+                    Elite Nutrition
+                  </h2>
+                </BlurInOnScroll>
+                <FadeInOnScroll direction="up" delay={0.3}>
+                  <p className="text-text-dim text-left md:text-justify leading-relaxed text-base md:text-lg font-light max-w-xl">
+                    Fuel your potential with algorithmic nutrition planning. Our system adapts your macronutrient ratios
+                    based on daily exertion.
+                  </p>
+                </FadeInOnScroll>
+                <FadeInOnScroll direction="up" delay={0.4} distance={20}>
+                  <button className="mt-8 md:mt-12 group flex items-center gap-3 text-white">
+                    <span className="text-xs md:text-sm font-bold uppercase tracking-widest border-b-2 border-primary pb-1">
+                      View Meal Architect
+                    </span>
+                    <span className="material-symbols-outlined text-primary">trending_flat</span>
+                  </button>
+                </FadeInOnScroll>
               </div>
               <div className="relative order-1 lg:order-2">
-                <div className="absolute inset-0 bg-primary/10 blur-[60px] md:blur-[100px] rounded-full"></div>
-                <Image
-                  alt="Nutrition"
-                  className="relative w-full aspect-square object-cover grayscale brightness-90"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcD4xFYpUbquadhovPPXuyCAV8sMjZHPQKDe21SBuVMokejKj1onbUzv_j3vAfONRt8nCsbvY81Ru0Fcd-D5B2-II3Bos4DLbvBoEKeRyObHzevzc3WTWRNNIQlu-lCIYI-t6zvphJHPilX0Jy6NoiIVbkb9qWVp9itrGV4uea6npgHwPYGcTGEfibAsKvQYNBts3S--UX51wDTLyVrAl1cf5hQSfXnJoWuAEKdqVch94Mpzy7jNVkp3LEczFMJraLDf-IBz8GLMI"
-                  width={800}
-                  height={800}
-                />
+                <ScaleOnScroll startScale={0.95} endScale={1}>
+                  <div className="absolute inset-0 bg-primary/10 blur-[60px] md:blur-[100px] rounded-full"></div>
+                  <RevealOnScroll direction="right">
+                    <Image
+                      alt="Nutrition"
+                      className="relative w-full aspect-square object-cover grayscale brightness-90"
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcD4xFYpUbquadhovPPXuyCAV8sMjZHPQKDe21SBuVMokejKj1onbUzv_j3vAfONRt8nCsbvY81Ru0Fcd-D5B2-II3Bos4DLbvBoEKeRyObHzevzc3WTWRNNIQlu-lCIYI-t6zvphJHPilX0Jy6NoiIVbkb9qWVp9itrGV4uea6npgHwPYGcTGEfibAsKvQYNBts3S--UX51wDTLyVrAl1cf5hQSfXnJoWuAEKdqVch94Mpzy7jNVkp3LEczFMJraLDf-IBz8GLMI"
+                      width={800}
+                      height={800}
+                    />
+                  </RevealOnScroll>
+                </ScaleOnScroll>
               </div>
             </div>
           </div>
         </section>
 
         {/* CTA Section */}
-        <section className="py-24 md:py-40 bg-surface-dark border-t border-white/5 text-center overflow-hidden relative">
+        <section className="py-24 md:py-40 bg-surface-dark/80 backdrop-blur-sm border-t border-white/5 text-center overflow-hidden relative">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none overflow-hidden">
-            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[40vw] lg:text-[30vw] font-bold text-white/[0.02] whitespace-nowrap font-display">
-              TrainDiary
-            </span>
+            <Parallax speed={0.3}>
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[40vw] lg:text-[30vw] font-bold text-white/[0.02] whitespace-nowrap font-display">
+                TrainDiary
+              </span>
+            </Parallax>
           </div>
           <div className="container mx-auto px-6 md:px-8 relative z-10">
-            <h3 className="text-4xl md:text-7xl font-bold font-display uppercase mb-10 md:mb-12 tracking-tighter">
-              Ready to Evolve?
-            </h3>
-            <div className="flex flex-col items-center gap-6 md:gap-8">
-              <button className="group w-full sm:w-auto relative bg-white text-black px-12 md:px-16 py-5 md:py-6 overflow-hidden transition-all hover:scale-105 active:scale-95">
-                <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                <span className="relative z-10 text-xs md:text-sm font-bold uppercase tracking-[0.2em] group-hover:text-white transition-colors">
-                  Join The Journey
-                </span>
-              </button>
-              <p className="text-text-dim text-[10px] md:text-xs uppercase tracking-widest font-bold">
-                LIMITED ENROLLMENT FOR Q4
-              </p>
-            </div>
+            <BlurInOnScroll>
+              <h3 className="text-4xl md:text-7xl font-bold font-display uppercase mb-10 md:mb-12 tracking-tighter">
+                Ready to Evolve?
+              </h3>
+            </BlurInOnScroll>
+            <FadeInOnScroll direction="up" delay={0.2} distance={20}>
+              <div className="flex flex-col items-center gap-6 md:gap-8">
+                <button className="group w-full sm:w-auto relative bg-white text-black px-12 md:px-16 py-5 md:py-6 overflow-hidden transition-all hover:scale-105 active:scale-95">
+                  <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                  <span className="relative z-10 text-xs md:text-sm font-bold uppercase tracking-[0.2em] group-hover:text-white transition-colors">
+                    Join The Journey
+                  </span>
+                </button>
+                <p className="text-text-dim text-[10px] md:text-xs uppercase tracking-widest font-bold">
+                  LIMITED ENROLLMENT FOR Q4
+                </p>
+              </div>
+            </FadeInOnScroll>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="bg-background-dark py-12 md:py-20 border-t border-white/5">
+      <footer className="bg-background-dark/90 backdrop-blur-sm py-12 md:py-20 border-t border-white/5">
         <div className="max-w-[1440px] mx-auto px-6 md:px-8 flex flex-col md:flex-row justify-between items-start gap-10 md:gap-12">
-          <div className="w-full md:w-auto">
-            <h4 className="text-lg md:text-xl font-bold font-display tracking-architectural mb-4 md:mb-6">TrainDiary</h4>
-            <p className="text-text-dim text-xs md:text-sm max-w-xs leading-relaxed">
-              The premier destination for high-performance aesthetics and athletic development.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-10 md:gap-16 w-full md:w-auto">
+          <FadeInOnScroll direction="up" delay={0.1}>
+            <div className="w-full md:w-auto">
+              <h4 className="text-lg md:text-xl font-bold font-display tracking-architectural mb-4 md:mb-6">TrainDiary</h4>
+              <p className="text-text-dim text-xs md:text-sm max-w-xs leading-relaxed">
+                The premier destination for high-performance aesthetics and athletic development.
+              </p>
+            </div>
+          </FadeInOnScroll>
+          <StaggerOnScroll staggerDelay={0.1} direction="up" className="grid grid-cols-2 lg:grid-cols-3 gap-10 md:gap-16 w-full md:w-auto">
             <div className="flex flex-col gap-3 md:gap-4">
               <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-primary">Platform</span>
               <a className="text-xs md:text-sm text-text-dim hover:text-white transition-colors" href="#">
@@ -327,16 +378,18 @@ export default function LandingPage() {
                 </a>
               </div>
             </div>
-          </div>
+          </StaggerOnScroll>
         </div>
-        <div className="max-w-[1440px] mx-auto px-6 md:px-8 mt-12 md:mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between text-[9px] md:text-[10px] text-text-dim uppercase tracking-widest font-bold text-center md:text-left">
-          <p>© 2024 TrainDiary PERFORMANCE SYSTEMS. ALL RIGHTS RESERVED.</p>
-          <div className="flex justify-center md:justify-end gap-6 md:gap-8 mt-4 md:mt-0">
-            <a href="#">Terms</a>
-            <a href="#">Privacy</a>
-            <a href="#">Security</a>
+        <FadeInOnScroll direction="up" delay={0.3}>
+          <div className="max-w-[1440px] mx-auto px-6 md:px-8 mt-12 md:mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between text-[9px] md:text-[10px] text-text-dim uppercase tracking-widest font-bold text-center md:text-left">
+            <p>© 2024 TrainDiary PERFORMANCE SYSTEMS. ALL RIGHTS RESERVED.</p>
+            <div className="flex justify-center md:justify-end gap-6 md:gap-8 mt-4 md:mt-0">
+              <a href="#">Terms</a>
+              <a href="#">Privacy</a>
+              <a href="#">Security</a>
+            </div>
           </div>
-        </div>
+        </FadeInOnScroll>
       </footer>
 
       {/* Mobile Bottom Navigation */}

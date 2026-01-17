@@ -14,6 +14,19 @@
   --tracking-architectural: 0.15em;
 }
 
+/* Aurora background color variables */
+:root {
+  --white: #fff;
+  --black: #000;
+  --transparent: transparent;
+  
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --indigo-300: #a5b4fc;
+  --violet-200: #ddd6fe;
+}
+
 body {
   background-color: #050505;
   color: #ffffff;
