@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { BlurText } from "@/components/ui/blur-text";
+import TextType from "@/components/ui/text-type";
+import ClickSpark from "@/components/ui/click-spark";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function LandingPage() {
@@ -17,7 +19,15 @@ export default function LandingPage() {
   };
 
   return (
-    <>
+    <ClickSpark
+      sparkColor="#3b82f6"
+      sparkSize={12}
+      sparkRadius={20}
+      sparkCount={10}
+      duration={500}
+      easing="ease-out"
+      extraScale={1.2}
+    >
       {/* Welcome Screen */}
       <AnimatePresence>
         {showWelcome && (
@@ -44,7 +54,7 @@ export default function LandingPage() {
         <div className="max-w-[1440px] mx-auto px-6 md:px-8 h-16 md:h-20 flex items-center justify-between">
           <div className="flex items-center gap-12">
             <a className="text-xl md:text-2xl font-bold font-display tracking-architectural border-non" href="#">
-              ASCENT
+              TrainDiary
             </a>
             <div className="hidden lg:flex items-center gap-8">
               <a className="text-[11px] font-bold uppercase tracking-widest text-white hover:text-primary transition-colors" href="#">
@@ -89,7 +99,7 @@ export default function LandingPage() {
       >
         <div className="p-6 h-full flex flex-col">
           <div className="flex justify-between items-center mb-12">
-            <span className="text-xl font-bold font-display tracking-architectural">ASCENT</span>
+            <span className="text-xl font-bold font-display tracking-architectural">TrainDiary</span>
             <button className="cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               <span className="material-symbols-outlined text-3xl">close</span>
             </button>
@@ -137,9 +147,27 @@ export default function LandingPage() {
               Built for the dedicated
             </p>
             <h1 className="fluid-heading font-bold font-display leading-[0.9] tracking-tighter uppercase mb-4 md:mb-0">
-              Welcome to
-              <br />
-              <span className="text-outline">The Ascent</span>
+              <span className="block">
+                <TextType
+                  text="Welcome to"
+                  typingSpeed={80}
+                  initialDelay={500}
+                  loop={false}
+                  showCursor={false}
+                />
+              </span>
+              <span className="text-outline block">
+                <TextType
+                  text="Train Diary"
+                  typingSpeed={80}
+                  initialDelay={1500}
+                  loop={false}
+                  showCursor={true}
+                  cursorCharacter="_"
+                  cursorClassName="text-primary"
+                  cursorBlinkDuration={0.6}
+                />
+              </span>
             </h1>
             <p className="mt-4 md:mt-8 text-base md:text-lg text-text-dim max-w-lg font-light leading-relaxed">
               Engineering physical perfection through data-driven performance tracking and elite-level programming.
@@ -244,7 +272,7 @@ export default function LandingPage() {
         <section className="py-24 md:py-40 bg-surface-dark border-t border-white/5 text-center overflow-hidden relative">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none overflow-hidden">
             <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[40vw] lg:text-[30vw] font-bold text-white/[0.02] whitespace-nowrap font-display">
-              ASCENT
+              TrainDiary
             </span>
           </div>
           <div className="container mx-auto px-6 md:px-8 relative z-10">
@@ -270,7 +298,7 @@ export default function LandingPage() {
       <footer className="bg-background-dark py-12 md:py-20 border-t border-white/5">
         <div className="max-w-[1440px] mx-auto px-6 md:px-8 flex flex-col md:flex-row justify-between items-start gap-10 md:gap-12">
           <div className="w-full md:w-auto">
-            <h4 className="text-lg md:text-xl font-bold font-display tracking-architectural mb-4 md:mb-6">ASCENT</h4>
+            <h4 className="text-lg md:text-xl font-bold font-display tracking-architectural mb-4 md:mb-6">TrainDiary</h4>
             <p className="text-text-dim text-xs md:text-sm max-w-xs leading-relaxed">
               The premier destination for high-performance aesthetics and athletic development.
             </p>
@@ -311,7 +339,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="max-w-[1440px] mx-auto px-6 md:px-8 mt-12 md:mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between text-[9px] md:text-[10px] text-text-dim uppercase tracking-widest font-bold text-center md:text-left">
-          <p>© 2024 ASCENT PERFORMANCE SYSTEMS. ALL RIGHTS RESERVED.</p>
+          <p>© 2024 TrainDiary PERFORMANCE SYSTEMS. ALL RIGHTS RESERVED.</p>
           <div className="flex justify-center md:justify-end gap-6 md:gap-8 mt-4 md:mt-0">
             <a href="#">Terms</a>
             <a href="#">Privacy</a>
@@ -344,6 +372,6 @@ export default function LandingPage() {
 
       {/* Spacer for mobile bottom nav */}
       <div className="h-16 lg:hidden"></div>
-    </>
+    </ClickSpark>
   );
 }
