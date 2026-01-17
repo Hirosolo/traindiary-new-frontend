@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: #3b82f6;
+  --color-accent: #60a5fa;
+  --color-background-dark: #050505;
+  --color-surface-dark: #0c0c0c;
+  --color-surface-card: #121212;
+  --color-surface-highlight: #1e1e1e;
+  --color-text-dim: #71717a;
+  --font-family-display: "Space Grotesk", sans-serif;
+  --font-family-body: "Inter", sans-serif;
+  --tracking-ultra-wide: 0.25em;
+  --tracking-architectural: 0.15em;
+}
+
+body {
+  background-color: #050505;
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: max(884px, 100dvh);
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.font-body {
+  font-family: "Inter", sans-serif;
+}
+
+.tracking-architectural {
+  letter-spacing: 0.15em;
+}
+
+.tracking-ultra-wide {
+  letter-spacing: 0.25em;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Hero gradient */
+.hero-gradient {
+  background: linear-gradient(180deg, rgba(5,5,5,0.7) 0%, #050505 85%, #050505 100%);
+}
+
+@media (min-width: 1024px) {
+  .hero-gradient {
+    background: linear-gradient(90deg, #050505 0%, #050505 40%, rgba(5,5,5,0.4) 100%);
+  }
+}
+
+/* Text outline effect */
+.text-outline {
+  -webkit-text-stroke: 1px rgba(255,255,255,0.2);
+  color: transparent;
+}
+
+/* Fluid heading */
+.fluid-heading {
+  font-size: clamp(3rem, 15vw, 8rem);
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
