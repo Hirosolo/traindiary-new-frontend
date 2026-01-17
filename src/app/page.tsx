@@ -8,6 +8,7 @@ import { TextLoop } from "@/components/core/text-loop";
 import ClickSpark from "@/components/ui/click-spark";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { motion, AnimatePresence } from "framer-motion";
+import AnimatedFixedNavbar from "@/components/ui/navbar";
 import {
   ScrollProgress,
   FadeInOnScroll,
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/scroll-animation";
 
 export default function LandingPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
 
   const handleWelcomeComplete = () => {
@@ -42,116 +42,10 @@ export default function LandingPage() {
       {/* Scroll Progress Indicator */}
       <ScrollProgress color="#3b82f6" height={3} position="top" />
 
-      {/* Welcome Screen */}
-      <AnimatePresence>
-        {showWelcome && (
-          <motion.div
-            className="fixed inset-0 z-[100] bg-background-dark flex items-center justify-center"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-          >
-            <BlurText
-              text="Welcome back"
-              delay={150}
-              animateBy="words"
-              direction="bottom"
-              onAnimationComplete={handleWelcomeComplete}
-              className="text-4xl md:text-6xl lg:text-7xl font-bold font-display text-white text-center"
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Navigation (Old nav with animation, fixed) */}
+      <AnimatedFixedNavbar />
 
-      {/* Aurora Background - covers entire page */}
-      <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden">
-        <AuroraBackground
-          className="!h-full !w-full !bg-transparent dark:!bg-transparent"
-          showRadialGradient={true}
-        >
-          <div />
-        </AuroraBackground>
-      </div>
-
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background-dark/60 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-[1440px] mx-auto px-6 md:px-8 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-12">
-            <a className="text-xl md:text-2xl font-bold font-display tracking-architectural border-non" href="#">
-              TrainDiary
-            </a>
-            <div className="hidden lg:flex items-center gap-8">
-              <a className="text-[11px] font-bold uppercase tracking-widest text-white hover:text-primary transition-colors" href="#">
-                Home
-              </a>
-              <a className="text-[11px] font-bold uppercase tracking-widest text-text-dim hover:text-white transition-colors" href="#">
-                Workout
-              </a>
-              <a className="text-[11px] font-bold uppercase tracking-widest text-text-dim hover:text-white transition-colors" href="#">
-                Nutrition
-              </a>
-              <a className="text-[11px] font-bold uppercase tracking-widest text-text-dim hover:text-white transition-colors" href="#">
-                Summary
-              </a>
-              <a className="text-[11px] font-bold uppercase tracking-widest text-text-dim hover:text-white transition-colors" href="#">
-                Programs
-              </a>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 md:gap-6">
-            <button className="material-symbols-outlined text-white/70 hover:text-white transition-colors">
-              search
-            </button>
-            <button className="hidden sm:block bg-white text-black text-[11px] font-bold px-6 py-2 uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
-              Join Now
-            </button>
-            <button
-              className="lg:hidden flex items-center cursor-pointer"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <span className="material-symbols-outlined text-white">menu</span>
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile Menu */}
-      <div
-        className={`fixed inset-0 z-[60] bg-background-dark transition-transform duration-300 lg:hidden ${
-          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="p-6 h-full flex flex-col">
-          <div className="flex justify-between items-center mb-12">
-            <span className="text-xl font-bold font-display tracking-architectural">TrainDiary</span>
-            <button className="cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
-              <span className="material-symbols-outlined text-3xl">close</span>
-            </button>
-          </div>
-          <div className="flex flex-col gap-8">
-            <a className="text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4" href="#">
-              Home
-            </a>
-            <a className="text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-text-dim" href="#">
-              Workout
-            </a>
-            <a className="text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-text-dim" href="#">
-              Nutrition
-            </a>
-            <a className="text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-text-dim" href="#">
-              Summary
-            </a>
-            <a className="text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-text-dim" href="#">
-              Programs
-            </a>
-          </div>
-          <div className="mt-auto pb-8">
-            <button className="w-full bg-white text-black py-5 font-bold uppercase tracking-widest">
-              Join The Movement
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Mobile menu handled by AnimatedFixedNavbar */}
 
       {/* Hero Section */}
       <section className="relative min-h-[90vh] md:min-h-screen flex items-end md:items-center pt-20">
