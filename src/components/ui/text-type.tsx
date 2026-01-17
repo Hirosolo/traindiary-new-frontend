@@ -175,7 +175,7 @@ const TextType = ({
     Component,
     {
       ref: containerRef,
-      className: `inline whitespace-nowrap ${className}`,
+      className: `inline-block whitespace-pre-wrap tracking-tight ${className}`,
       ...props
     },
     <span className="inline" style={{ color: getCurrentTextColor() || 'inherit' }}>

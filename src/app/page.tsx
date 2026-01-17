@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { BlurText } from "@/components/ui/blur-text";
-import TextType from "@/components/ui/text-type";
+import { TextEffect } from "@/components/core/text-effect";
+import { TextLoop } from "@/components/core/text-loop";
 import ClickSpark from "@/components/ui/click-spark";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -147,30 +148,20 @@ export default function LandingPage() {
               Built for the dedicated
             </p>
             <h1 className="fluid-heading font-bold font-display leading-[0.9] tracking-tighter uppercase mb-4 md:mb-0">
-              <span className="block">
-                <TextType
-                  text="Welcome to"
-                  typingSpeed={80}
-                  initialDelay={500}
-                  loop={false}
-                  showCursor={false}
-                />
-              </span>
-              <span className="text-outline block">
-                <TextType
-                  text="Train Diary"
-                  typingSpeed={80}
-                  initialDelay={1500}
-                  loop={false}
-                  showCursor={true}
-                  cursorCharacter="_"
-                  cursorClassName="text-primary"
-                  cursorBlinkDuration={0.6}
-                />
-              </span>
+              <TextEffect per="char" preset="blur" delay={0.5} className="block">
+                Welcome to
+              </TextEffect>
+              <TextEffect per="char" preset="blur" delay={1.2} className="text-outline block">
+                Train Diary
+              </TextEffect>
             </h1>
             <p className="mt-4 md:mt-8 text-base md:text-lg text-text-dim max-w-lg font-light leading-relaxed">
-              Engineering physical perfection through data-driven performance tracking and elite-level programming.
+              <TextLoop interval={4000}>
+                <span>Engineering physical perfection through data-driven performance tracking.</span>
+                <span>Track your workouts with precision and achieve elite-level results.</span>
+                <span>Transform your training with intelligent analytics and insights.</span>
+                <span>Your personal fitness companion for peak performance.</span>
+              </TextLoop>
             </p>
             <div className="mt-8 md:mt-12 flex">
               <button className="group w-full md:w-auto flex items-center justify-between md:justify-start gap-4 border border-white px-8 md:px-10 py-4 md:py-5 hover:bg-white hover:text-black transition-all">
