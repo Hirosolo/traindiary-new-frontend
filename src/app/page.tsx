@@ -2,12 +2,43 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { BlurText } from "@/components/ui/blur-text";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
+
+  const handleWelcomeComplete = () => {
+    // Wait a bit after animation completes before transitioning
+    setTimeout(() => {
+      setShowWelcome(false);
+    }, 800);
+  };
 
   return (
     <>
+      {/* Welcome Screen */}
+      <AnimatePresence>
+        {showWelcome && (
+          <motion.div
+            className="fixed inset-0 z-[100] bg-background-dark flex items-center justify-center"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+          >
+            <BlurText
+              text="Welcome back"
+              delay={150}
+              animateBy="words"
+              direction="bottom"
+              onAnimationComplete={handleWelcomeComplete}
+              className="text-4xl md:text-6xl lg:text-7xl font-bold font-display text-white text-center"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background-dark/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-[1440px] mx-auto px-6 md:px-8 h-16 md:h-20 flex items-center justify-between">
