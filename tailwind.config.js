@@ -19,11 +19,17 @@ module.exports = {
         "surface-dark": "#0c0c0c",
         "surface-card": "#121212",
         "surface-highlight": "#1e1e1e",
-        "text-dim": "#71717a",
+        "text-dim": "#a1a1aa",
+        "electric-blue": "#3B82F6",
+        "obsidian-black": "#050505",
+        "obsidian-deep": "#020202",
+        "dark-grey": "#121212",
       },
       fontFamily: {
         display: ["var(--font-space-grotesk)", "Space Grotesk", "sans-serif"],
         body: ["var(--font-inter)", "Inter", "sans-serif"],
+        sans: ["Inter", "sans-serif"],
+        montserrat: ["Montserrat", "sans-serif"],
       },
       letterSpacing: {
         "ultra-wide": "0.25em",
