@@ -69,6 +69,19 @@ body {
   }
 }
 
+/* Program card gradient */
+.program-card-gradient {
+  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.1) 100%);
+}
+
+/* Glass panel effect */
+.glass-panel {
+  background-color: rgba(5, 5, 5, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 /* Text outline effect */
 .text-outline {
   -webkit-text-stroke: 1px rgba(255,255,255,0.2);
