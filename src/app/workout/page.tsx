@@ -15,9 +15,17 @@ import WorkoutDetails, {
 import LogWorkoutModal, { NewWorkoutSession } from "@/components/workout/LogWorkoutModal";
 
 export default function WorkoutPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2023, 9, 1)); // October 2023
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const currentDate = new Date(selectedYear, selectedMonth, 1);
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutDetailsData | null>(null);
   const [isLogWorkoutModalOpen, setIsLogWorkoutModalOpen] = useState(false);
+
+  const handleMonthYearChange = (year: number, month: number) => {
+    setSelectedYear(year);
+    setSelectedMonth(month);
+  };
 
   // Mock data - replace with API calls later
   const [workoutSessions, setWorkoutSessions] = useState<
@@ -103,8 +111,8 @@ export default function WorkoutPage() {
 
   // Calculate days for calendar
   const calendarDays = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
+    const year = selectedYear;
+    const month = selectedMonth;
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
@@ -147,7 +155,7 @@ export default function WorkoutPage() {
     }
 
     return days;
-  }, [currentDate, workoutSessions]);
+  }, [selectedYear, selectedMonth, workoutSessions]);
 
   // Calculate current streak (days with at least 1 completed workout)
   const currentStreak = useMemo(() => {
@@ -168,15 +176,26 @@ export default function WorkoutPage() {
     );
   }, [workoutSessions]);
 
-  const monthName = currentDate.toLocaleString("en-US", { month: "long" });
-  const year = currentDate.getFullYear();
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthName = monthNames[selectedMonth];
+  const year = selectedYear;
 
   const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    if (selectedMonth === 0) {
+      setSelectedMonth(11);
+      setSelectedYear(selectedYear - 1);
+    } else {
+      setSelectedMonth(selectedMonth - 1);
+    }
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    if (selectedMonth === 11) {
+      setSelectedMonth(0);
+      setSelectedYear(selectedYear + 1);
+    } else {
+      setSelectedMonth(selectedMonth + 1);
+    }
   };
 
   const handleSessionClick = (session: WorkoutSession, day: number) => {
@@ -348,7 +367,20 @@ export default function WorkoutPage() {
     <div className="bg-background-dark text-white min-h-screen">
       <NavBar />
 
-      <div className="flex flex-col lg:flex-row h-screen pt-16">
+      <main className="pt-16 pb-24 overflow-y-auto">
+        <div className="p-5 space-y-6">
+          {/* Header */}
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold font-display tracking-tight text-white uppercase italic leading-tight">
+              Workout
+            </h1>
+            <p className="text-[11px] text-text-dim mt-0.5 font-medium leading-relaxed">
+              Track your training sessions.
+            </p>
+          </div>
+        </div>
+
+      <div className="flex flex-col lg:flex-row">
         {/* Mobile Activity Overview - Hidden on desktop */}
         <div className="lg:hidden px-4 py-6 border-b border-white/5 bg-surface-dark">
           <div className="grid grid-cols-2 gap-4 mb-6">
@@ -386,6 +418,9 @@ export default function WorkoutPage() {
             monthlyFocusLabel="Strength Phase"
             monthlyFocusProgress={85}
             onLogWorkout={handleLogWorkout}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onMonthYearChange={handleMonthYearChange}
           />
         </div>
 
@@ -427,6 +462,7 @@ export default function WorkoutPage() {
           </div>
         )}
       </div>
+      </main>
 
       <LogWorkoutModal
         isOpen={isLogWorkoutModalOpen}
