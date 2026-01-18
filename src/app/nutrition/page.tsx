@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import NavBar from "@/components/ui/navbar";
 import { CalendarLume } from "@/components/ui/calendar-lume";
 import MealCalendar from "@/components/nutrition/MealCalendar";
+import MealDetails from "@/components/nutrition/MealDetails";
 import type { DayData as MealDayData } from "@/components/nutrition/MealCalendar";
 
 type MacroGoals = {
@@ -303,6 +304,16 @@ export default function NutritionPage() {
             onNextMonth={handleNextMonth}
             onMealClick={handleMealClick}
           />
+
+          {/* Desktop Meal Details - Hidden on mobile */}
+          {selectedMeal && (
+            <div className="hidden lg:block">
+              <MealDetails
+                meal={selectedMeal}
+                onClose={() => setSelectedMeal(null)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Mobile Layout - Hidden on desktop */}
@@ -450,57 +461,14 @@ export default function NutritionPage() {
           </div>
         </div>
 
-        {/* Meal Details Modal */}
+        {/* Mobile Meal Details Modal */}
         {selectedMeal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end">
-            <div className="w-full bg-surface-dark rounded-t-3xl max-h-[85vh] overflow-y-auto flex flex-col animate-slide-up">
-              <div className="sticky top-0 bg-surface-dark border-b border-white/5 px-6 py-4 flex items-center justify-between">
-                <h2 className="text-lg font-display font-bold uppercase">{selectedMeal.name}</h2>
-                <button
-                  onClick={() => setSelectedMeal(null)}
-                  className="p-2 hover:bg-surface-card rounded-lg transition-colors"
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
-
-              <div className="flex-1 p-6 space-y-6">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-surface-card p-4 rounded-2xl border border-white/5">
-                    <p className="text-[9px] font-bold text-text-dim uppercase mb-2">Protein</p>
-                    <p className="text-2xl font-display font-bold">{selectedMeal.protein}g</p>
-                  </div>
-                  <div className="bg-surface-card p-4 rounded-2xl border border-white/5">
-                    <p className="text-[9px] font-bold text-text-dim uppercase mb-2">Carbs</p>
-                    <p className="text-2xl font-display font-bold">{selectedMeal.carbs}g</p>
-                  </div>
-                  <div className="bg-surface-card p-4 rounded-2xl border border-white/5">
-                    <p className="text-[9px] font-bold text-text-dim uppercase mb-2">Fats</p>
-                    <p className="text-2xl font-display font-bold">{selectedMeal.fats}g</p>
-                  </div>
-                  <div className="bg-surface-card p-4 rounded-2xl border border-white/5">
-                    <p className="text-[9px] font-bold text-text-dim uppercase mb-2">Calories</p>
-                    <p className="text-2xl font-display font-bold">{selectedMeal.calories}</p>
-                  </div>
-                </div>
-
-                {selectedMeal.items && selectedMeal.items.length > 0 && (
-                  <div className="bg-surface-card p-4 rounded-2xl border border-white/5">
-                    <h3 className="text-[10px] font-bold text-text-dim uppercase mb-3 tracking-wider">Ingredients</h3>
-                    <ul className="space-y-2">
-                      {selectedMeal.items.map((item, idx) => (
-                        <li key={idx} className="text-sm text-white">
-                          • {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <button className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:brightness-110 transition-all">
-                  Edit Meal
-                </button>
-              </div>
+          <div className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end">
+            <div className="w-full bg-surface-dark rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col animate-slide-up">
+              <MealDetails
+                meal={selectedMeal}
+                onClose={() => setSelectedMeal(null)}
+              />
             </div>
           </div>
         )}
