@@ -75,7 +75,8 @@ export default function NavBar({
             search
           </button>
           <button className="hidden sm:block bg-white text-black text-[11px] font-bold px-6 py-2 uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
-            Join Now
+            <a href="/signin">Join Now</a>
+            
           </button>
           <button
             className="lg:hidden flex items-center cursor-pointer"

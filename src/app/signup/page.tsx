@@ -50,6 +50,14 @@ export default function SignUpPage() {
 
       {/* Main Content */}
       <main className="relative z-10 w-full max-w-md px-8 pt-16 pb-safe flex flex-col min-h-screen">
+        <div className="flex justify-start">
+          <Link
+            href="/"
+            className="text-xl font-bold font-display tracking-architectural hover:text-electric-blue transition-colors"
+          >
+            TrainDiary
+          </Link>
+        </div>
         {/* Header */}
         <div className="mt-16 mb-10">
           <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-electric-blue drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] mb-3">
@@ -122,12 +130,12 @@ export default function SignUpPage() {
                 className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue"
               />
               <div className="flex justify-end mt-2">
-                <button
-                  type="button"
+                <Link
+                  href="/forgot-password"
                   className="text-[9px] font-bold tracking-[0.15em] text-white/40 hover:text-white uppercase transition-colors"
                 >
                   Forgot Password?
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -135,7 +143,7 @@ export default function SignUpPage() {
             <div className="pt-6">
               <button
                 type="submit"
-                className="w-full bg-electric-blue border border-electric-blue text-white py-5 rounded-none transition-all duration-300 hover:bg-blue-600 active:scale-[0.98] shadow-[0_0_30px_rgba(59,130,246,0.4),inset_0_0_10px_rgba(59,130,246,0.2)]"
+                className="w-full bg-electric-blue border border-electric-blue text-white py-5 rounded-none transition-all duration-300 hover:bg-blue-600 active:scale-[0.98] shadow-[0_0_30px_rgba(59,130,246,0.4),inset_0_0_10px_rgba(59,130,246,0.2)] cursor-pointer"
               >
                 <span className="font-black text-xs uppercase tracking-[0.5em] text-white">
                   Start Ascent

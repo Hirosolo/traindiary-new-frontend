@@ -47,6 +47,14 @@ export default function SignInPage() {
 
       {/* Main Content */}
       <main className="relative z-10 w-full max-w-md px-8 pt-safe pb-safe flex flex-col min-h-screen">
+        <div className="flex justify-start pt-6">
+          <Link
+            href="/"
+            className="text-xl font-bold font-display tracking-architectural hover:text-electric-blue transition-colors"
+          >
+            TrainDiary
+          </Link>
+        </div>
         {/* Header */}
         <div className="mt-24 mb-10">
           <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-electric-blue/90 mb-2 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
@@ -89,12 +97,12 @@ export default function SignInPage() {
                 className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10"
               />
               <div className="flex justify-end mt-2">
-                <button
-                  type="button"
+                <Link
+                  href="/forgot-password"
                   className="text-[9px] font-bold tracking-[0.15em] text-white/30 hover:text-electric-blue uppercase transition-colors"
                 >
                   FORGOT PASSWORD?
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -102,7 +110,7 @@ export default function SignInPage() {
             <div className="pt-6">
               <button
                 type="submit"
-                className="w-full bg-black border border-electric-blue/50 text-white py-5 rounded-none transition-all duration-300 hover:bg-electric-blue/10 hover:border-electric-blue active:scale-[0.98] shadow-[0_0_30px_rgba(59,130,246,0.35)]"
+                className="w-full bg-electric-blue border border-electric-blue text-white py-5 rounded-none transition-all duration-300 hover:bg-blue-600 active:scale-[0.98] shadow-[0_0_30px_rgba(59,130,246,0.4),inset_0_0_10px_rgba(59,130,246,0.2)] cursor-pointer"
               >
                 <span className="font-bold text-xs uppercase tracking-[0.4em]">
                   ENTER PLATFORM

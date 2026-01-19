@@ -77,7 +77,7 @@ export default function LandingPage() {
             <FadeInOnScroll direction="up" delay={0.6} distance={20}>
               <div className="mt-8 md:mt-12 flex">
                 <button className="group w-full md:w-auto flex items-center justify-between md:justify-start gap-4 border border-white px-8 md:px-10 py-4 md:py-5 hover:bg-white hover:text-black transition-all">
-                  <span className="text-xs md:text-sm font-bold uppercase tracking-architectural">Start Training</span>
+                  <span className="text-xs md:text-sm font-bold uppercase tracking-architectural"><a href="/signin">Start Training</a></span>
                   <span className="material-symbols-outlined group-hover:translate-x-2 transition-transform text-2xl md:text-base">
                     arrow_right_alt
                   </span>
@@ -216,7 +216,8 @@ export default function LandingPage() {
                 <button className="group w-full sm:w-auto relative bg-white text-black px-12 md:px-16 py-5 md:py-6 overflow-hidden transition-all hover:scale-105 active:scale-95">
                   <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                   <span className="relative z-10 text-xs md:text-sm font-bold uppercase tracking-[0.2em] group-hover:text-white transition-colors">
-                    Join The Journey
+                    <a href="/signin">Join The Journey</a>
+                    
                   </span>
                 </button>
                 <p className="text-text-dim text-[10px] md:text-xs uppercase tracking-widest font-bold">
