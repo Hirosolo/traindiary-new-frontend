@@ -22,24 +22,12 @@ const FloatingNav = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
-  // Sync active tab with current route; prefer the longest matching prefix and treat home as exact
+  // Sync active tab with current route
   useEffect(() => {
-    if (!pathname) return;
-
-    const matchIndex = navItems.reduce((bestIndex, item, index) => {
-      if (item.href === "/") {
-        return pathname === "/" ? index : bestIndex;
-      }
-
-      if (pathname.startsWith(item.href)) {
-        const currentBest = navItems[bestIndex];
-        const currentLength = currentBest?.href?.length ?? -1;
-        return item.href.length > currentLength ? index : bestIndex;
-      }
-      return bestIndex;
-    }, 0);
-
-    setActiveIndex(matchIndex);
+    const matchIndex = navItems.findIndex((item) => pathname?.startsWith(item.href));
+    if (matchIndex >= 0) {
+      setActiveIndex(matchIndex);
+    }
   }, [pathname]);
 
   // Update indicator position when active changes or resize
@@ -74,12 +62,9 @@ const FloatingNav = () => {
           <Link
             key={item.href}
             href={item.href}
-            ref={(el) => (btnRefs.current[index] = el)}
+
             onClick={() => setActiveIndex(index)}
-            aria-current={activeIndex === index ? "page" : undefined}
-            className={`relative flex flex-1 flex-col items-center justify-center gap-1 px-2 py-2 text-xs font-medium transition-colors hover:text-white ${
-              activeIndex === index ? "text-white" : "text-text-dim"
-            }`}
+            className="relative flex flex-1 flex-col items-center justify-center gap-1 px-2 py-2 text-xs font-medium text-text-dim transition-colors hover:text-white"
           >
             <div className="z-10">{item.icon}</div>
             <span className="hidden text-[10px] uppercase tracking-[0.1em] sm:block">{item.label}</span>
@@ -89,7 +74,7 @@ const FloatingNav = () => {
         <motion.div
           animate={indicatorStyle}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-primary/15"
+          className="absolute top-1 bottom-1 rounded-full bg-primary/10"
         />
       </div>
     </div>
