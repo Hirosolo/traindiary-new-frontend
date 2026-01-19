@@ -6,6 +6,9 @@ interface ActivityOverviewProps {
   monthlyFocusLabel: string;
   monthlyFocusProgress: number;
   onLogWorkout: () => void;
+  selectedMonth?: number;
+  selectedYear?: number;
+  onMonthYearChange?: (year: number, month: number) => void;
 }
 
 export default function ActivityOverview({
@@ -14,9 +17,57 @@ export default function ActivityOverview({
   monthlyFocusLabel,
   monthlyFocusProgress,
   onLogWorkout,
+  selectedMonth,
+  selectedYear,
+  onMonthYearChange,
 }: ActivityOverviewProps) {
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const handlePrev = () => {
+    if (onMonthYearChange && selectedMonth !== undefined && selectedYear !== undefined) {
+      const newMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+      const newYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+      onMonthYearChange(newYear, newMonth);
+    }
+  };
+
+  const handleNext = () => {
+    if (onMonthYearChange && selectedMonth !== undefined && selectedYear !== undefined) {
+      const newMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
+      const newYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
+      onMonthYearChange(newYear, newMonth);
+    }
+  };
+
   return (
     <aside className="w-72 border-r border-white/5 bg-surface-dark p-6 flex flex-col gap-8 shrink-0 overflow-y-auto">
+      {onMonthYearChange && selectedMonth !== undefined && selectedYear !== undefined ? (
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <p className="text-[10px] font-bold tracking-[0.2em] text-text-dim uppercase">Period</p>
+            <p className="text-lg font-display font-bold leading-tight">
+              {monthNames[selectedMonth]} {selectedYear}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrev}
+              className="size-9 rounded-full border border-white/10 text-white/80 hover:text-white hover:border-white/30 transition-colors flex items-center justify-center"
+              aria-label="Previous month"
+            >
+              <span className="material-symbols-outlined text-base">chevron_left</span>
+            </button>
+            <button
+              onClick={handleNext}
+              className="size-9 rounded-full border border-white/10 text-white/80 hover:text-white hover:border-white/30 transition-colors flex items-center justify-center"
+              aria-label="Next month"
+            >
+              <span className="material-symbols-outlined text-base">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div>
         <h3 className="text-[10px] font-bold tracking-[0.2em] text-text-dim uppercase mb-4">
           Activity Overview
