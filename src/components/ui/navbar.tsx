@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { motion, useScroll, useMotionValueEvent } from "motion/react";
 
@@ -28,6 +29,10 @@ export default function NavBar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
   const [elevated, setElevated] = useState(false);
+  const pathname = usePathname();
+
+  const getHref = (link: string) => (link.startsWith("/") ? link : `/${link}`);
+  const isActive = (link: string) => pathname === getHref(link);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setElevated(latest > 40);
@@ -62,8 +67,13 @@ export default function NavBar({
             {items.map((item) => (
               <a
                 key={item.name}
-                className="text-[11px] font-bold uppercase tracking-widest text-text-dim hover:text-white transition-colors"
-                href={item.link}
+                className={cn(
+                  "text-[11px] font-bold uppercase tracking-widest transition-colors pb-1",
+                  isActive(item.link)
+                    ? "text-white border-b-2 border-primary"
+                    : "text-text-dim hover:text-white",
+                )}
+                href={getHref(item.link)}
               >
                 {item.name}
               </a>
@@ -111,7 +121,7 @@ export default function NavBar({
               <a
                 key={`mobile-${item.name}`}
                 className="text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-text-dim hover:text-white transition-colors"
-                href={item.link}
+                href={getHref(item.link)}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {item.name}
