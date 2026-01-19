@@ -516,11 +516,11 @@ export default function ProgramsPage() {
 
   return (
     <div className="bg-background-dark text-white min-h-screen">
-      <NavBar />
+      <NavBar className="hidden lg:block" />
 
       <main className="pt-16 pb-32">
         {/* Header with Search */}
-        <header className="sticky top-16 z-40 glass-panel px-5 py-4 flex items-center justify-between">
+        <header className="top-16 z-40 glass-panel px-5 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold font-display tracking-tight uppercase leading-none">
               Programs

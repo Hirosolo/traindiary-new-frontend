@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { BlurText } from "@/components/ui/blur-text";
-import { TextEffect } from "@/components/core/text-effect";
+import { motion, AnimatePresence } from "framer-motion";
+import TextType from "@/components/ui/text-type";
 import { TextLoop } from "@/components/core/text-loop";
 import ClickSpark from "@/components/ui/click-spark";
-import { AuroraBackground } from "@/components/ui/aurora-background";
-import { motion, AnimatePresence } from "framer-motion";
 import AnimatedFixedNavbar from "@/components/ui/navbar";
+import { BlurText } from "@/components/ui/blur-text";
 import {
   ScrollProgress,
   FadeInOnScroll,
@@ -30,20 +29,40 @@ export default function LandingPage() {
   };
 
   return (
-    <ClickSpark
-      sparkColor="#3b82f6"
-      sparkSize={12}
-      sparkRadius={20}
-      sparkCount={10}
-      duration={500}
-      easing="ease-out"
-      extraScale={1.2}
-    >
+    <>
+      <AnimatePresence>
+        {showWelcome && (
+          <motion.div
+            className="fixed inset-0 z-[100] bg-background-dark flex items-center justify-center"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+          >
+            <BlurText
+              text="Welcome back"
+              delay={150}
+              animateBy="words"
+              direction="bottom"
+              onAnimationComplete={handleWelcomeComplete}
+              className="text-4xl md:text-6xl lg:text-7xl font-bold font-display text-white text-center"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <ClickSpark
+        sparkColor="#3b82f6"
+        sparkSize={12}
+        sparkRadius={20}
+        sparkCount={10}
+        duration={500}
+        easing="ease-out"
+        extraScale={1.2}
+      >
       {/* Scroll Progress Indicator */}
       <ScrollProgress color="#3b82f6" height={3} position="top" />
 
-      {/* Navigation (Old nav with animation, fixed) */}
-      <AnimatedFixedNavbar />
+      {/* Desktop navigation; hidden on mobile to avoid double nav with FloatingNav */}
+      <AnimatedFixedNavbar className="hidden lg:block" />
 
       {/* Mobile menu handled by AnimatedFixedNavbar */}
 
@@ -57,12 +76,26 @@ export default function LandingPage() {
               </p>
             </FadeInOnScroll>
             <h1 className="fluid-heading font-bold font-display leading-[0.9] tracking-tighter uppercase mb-4 md:mb-0">
-              <TextEffect per="char" preset="blur" delay={0.5} className="block">
-                Welcome to
-              </TextEffect>
-              <TextEffect per="char" preset="blur" delay={1.2} className="text-outline block">
-                Train Diary
-              </TextEffect>
+              <TextType
+                as="div"
+                text="Welcome to"
+                typingSpeed={42}
+                loop={false}
+                showCursor={false}
+                startOnVisible
+                className="block"
+              />
+              <TextType
+                as="div"
+                text="Train Diary"
+                typingSpeed={50}
+                initialDelay={900}
+                loop={false}
+                startOnVisible
+                cursorBlinkDuration={0.6}
+                cursorClassName="text-primary"
+                className="text-outline block"
+              />
             </h1>
             <FadeInOnScroll direction="up" delay={0.4} distance={20}>
               <p className="mt-4 md:mt-8 text-base md:text-lg text-text-dim max-w-lg font-light leading-relaxed">
@@ -286,31 +319,7 @@ export default function LandingPage() {
           </div>
         </FadeInOnScroll>
       </footer>
-
-      {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background-dark/90 backdrop-blur-xl border-t border-white/10 px-6 py-3">
-        <div className="flex justify-around items-center">
-          <a className="flex flex-col items-center gap-1 text-primary" href="#">
-            <span className="material-symbols-outlined text-2xl">home</span>
-            <span className="text-[9px] font-bold uppercase tracking-widest">Home</span>
-          </a>
-          <a className="flex flex-col items-center gap-1 text-text-dim" href="#">
-            <span className="material-symbols-outlined text-2xl">fitness_center</span>
-            <span className="text-[9px] font-bold uppercase tracking-widest">Train</span>
-          </a>
-          <a className="flex flex-col items-center gap-1 text-text-dim" href="#">
-            <span className="material-symbols-outlined text-2xl">restaurant</span>
-            <span className="text-[9px] font-bold uppercase tracking-widest">Fuel</span>
-          </a>
-          <a className="flex flex-col items-center gap-1 text-text-dim" href="#">
-            <span className="material-symbols-outlined text-2xl">person</span>
-            <span className="text-[9px] font-bold uppercase tracking-widest">Profile</span>
-          </a>
-        </div>
-      </div>
-
-      {/* Spacer for mobile bottom nav */}
-      <div className="h-16 lg:hidden"></div>
-    </ClickSpark>
+      </ClickSpark>
+    </>
   );
 }

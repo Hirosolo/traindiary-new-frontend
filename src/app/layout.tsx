@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import FloatingNav from "@/components/ui/floating-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function RootLayout({
       </head>
       <body className="bg-background-dark text-white font-body antialiased selection:bg-primary/30 overflow-x-hidden">
         {children}
+        <FloatingNav />
       </body>
     </html>
   );

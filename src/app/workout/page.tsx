@@ -365,7 +365,7 @@ export default function WorkoutPage() {
 
   return (
     <div className="bg-background-dark text-white min-h-screen">
-      <NavBar />
+      <NavBar className="hidden lg:block" />
 
       <main className="pt-16 pb-24 overflow-y-auto">
         <div className="p-5 space-y-6">
