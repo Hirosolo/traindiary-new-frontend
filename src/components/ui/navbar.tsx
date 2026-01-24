@@ -3,6 +3,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { motion, useScroll, useMotionValueEvent } from "motion/react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavItem {
   name: string;
@@ -30,6 +31,7 @@ export default function NavBar({
   const { scrollY } = useScroll();
   const [elevated, setElevated] = useState(false);
   const pathname = usePathname();
+  const { user } = useAuth();
 
   const getHref = (link: string) => (link.startsWith("/") ? link : `/${link}`);
   const isActive = (link: string) => pathname === getHref(link);
@@ -84,10 +86,15 @@ export default function NavBar({
           <button className="material-symbols-outlined text-white/70 hover:text-white transition-colors">
             search
           </button>
-          <button className="hidden sm:block bg-white text-black text-[11px] font-bold px-6 py-2 uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
-            <a href="/signin">Join Now</a>
-            
-          </button>
+          {!user ? (
+            <a href="/signin" className="hidden sm:block bg-white text-black text-[11px] font-bold px-6 py-2 uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
+              Join Now
+            </a>
+          ) : (
+            <a href="/profile" aria-label="Open profile" className="hidden sm:flex items-center justify-center h-9 w-9 rounded-full bg-white/10 ring-1 ring-white/10 hover:ring-primary/50 transition-all overflow-hidden">
+              <span className="material-symbols-outlined text-white text-[18px]">account_circle</span>
+            </a>
+          )}
           <button
             className="lg:hidden flex items-center cursor-pointer"
             onClick={() => setIsMobileMenuOpen(true)}
@@ -129,9 +136,15 @@ export default function NavBar({
             ))}
           </div>
           <div className="mt-auto pb-8">
-            <button className="w-full bg-white text-black py-5 font-bold uppercase tracking-widest">
-              Join The Movement
-            </button>
+            {!user ? (
+              <a href="/signin" className="block w-full text-center bg-white text-black py-5 font-bold uppercase tracking-widest">
+                Join The Movement
+              </a>
+            ) : (
+              <a href="/profile" className="block w-full text-center bg-white text-black py-5 font-bold uppercase tracking-widest">
+                Profile
+              </a>
+            )}
           </div>
         </div>
       </div>

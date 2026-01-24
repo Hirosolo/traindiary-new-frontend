@@ -8,13 +8,14 @@ export interface WorkoutSession {
   status: "complete" | "incomplete";
   note?: string;
   time?: string;
+  exercises?: string[];
 }
 
 export interface DayData {
   day: number;
   isCurrentMonth: boolean;
   sessions: WorkoutSession[];
-  isPR?: boolean;
+  isToday?: boolean;
 }
 
 interface WorkoutCalendarProps {
@@ -95,7 +96,7 @@ export default function WorkoutCalendar({
                 key={index}
                 className={`bg-background-dark p-2 lg:p-3 relative group transition-colors ${
                   hasSessions ? "cursor-pointer hover:bg-surface-dark" : ""
-                } ${dayData.isPR ? "ring-2 ring-primary ring-inset" : ""}`}
+                } ${dayData.isToday ? "ring-2 ring-primary ring-inset" : ""}`}
                 style={{ minHeight: isExpanded ? "auto" : "5rem" }}
                 onClick={() => handleDayClick(dayData.day, hasSessions)}
               >
@@ -103,7 +104,7 @@ export default function WorkoutCalendar({
                   className={`text-xs lg:text-sm font-medium ${
                     !dayData.isCurrentMonth
                       ? "text-white/20"
-                      : dayData.isPR
+                      : dayData.isToday
                       ? "text-primary"
                       : hasSessions
                       ? "text-white"
@@ -158,6 +159,12 @@ export default function WorkoutCalendar({
                             {session.time && (
                               <p className="text-[8px] lg:text-[9px] text-text-dim uppercase font-bold">
                                 {session.time}
+                              </p>
+                            )}
+                            {session.exercises && session.exercises.length > 0 && (
+                              <p className="text-[9px] lg:text-[10px] text-text-dim mt-1 line-clamp-2">
+                                {session.exercises.slice(0, 3).join(" • ")}
+                                {session.exercises.length > 3 ? ` +${session.exercises.length - 3}` : ""}
                               </p>
                             )}
                           </div>

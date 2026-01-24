@@ -2,14 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignUpPage() {
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
     password: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -17,12 +21,22 @@ export default function SignUpPage() {
       ...prev,
       [name]: value,
     }));
+    setError(''); // Clear error when user types
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Sign up form submitted:', formData);
-    // Handle sign up logic here
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await register(formData.fullName, formData.email, formData.password);
+      // Router push is handled in AuthContext after successful registration and login
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,6 +85,13 @@ export default function SignUpPage() {
         {/* Form Section */}
         <div className="flex-1 flex flex-col">
           <form className="space-y-7" onSubmit={handleSubmit}>
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded text-sm">
+                {error}
+              </div>
+            )}
+
             {/* Full Name */}
             <div className="group">
               <label className="block text-[10px] font-bold uppercase tracking-widest text-text-dim group-focus-within:text-electric-blue transition-colors">
@@ -82,7 +103,9 @@ export default function SignUpPage() {
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="e.g. John Doe"
-                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue"
+                required
+                disabled={isLoading}
+                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue disabled:opacity-50"
               />
             </div>
 
@@ -97,7 +120,9 @@ export default function SignUpPage() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="name@performance.com"
-                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue"
+                required
+                disabled={isLoading}
+                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue disabled:opacity-50"
               />
             </div>
 
@@ -112,7 +137,8 @@ export default function SignUpPage() {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="+1 (555) 000-0000"
-                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue"
+                disabled={isLoading}
+                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue disabled:opacity-50"
               />
             </div>
 
@@ -127,7 +153,10 @@ export default function SignUpPage() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue"
+                required
+                minLength={6}
+                disabled={isLoading}
+                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue disabled:opacity-50"
               />
               <div className="flex justify-end mt-2">
                 <Link
@@ -143,10 +172,11 @@ export default function SignUpPage() {
             <div className="pt-6">
               <button
                 type="submit"
-                className="w-full bg-electric-blue border border-electric-blue text-white py-5 rounded-none transition-all duration-300 hover:bg-blue-600 active:scale-[0.98] shadow-[0_0_30px_rgba(59,130,246,0.4),inset_0_0_10px_rgba(59,130,246,0.2)] cursor-pointer"
+                disabled={isLoading}
+                className="w-full bg-electric-blue border border-electric-blue text-white py-5 rounded-none transition-all duration-300 hover:bg-blue-600 active:scale-[0.98] shadow-[0_0_30px_rgba(59,130,246,0.4),inset_0_0_10px_rgba(59,130,246,0.2)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="font-black text-xs uppercase tracking-[0.5em] text-white">
-                  Start Ascent
+                  {isLoading ? 'CREATING...' : 'Start Ascent'}
                 </span>
               </button>
             </div>

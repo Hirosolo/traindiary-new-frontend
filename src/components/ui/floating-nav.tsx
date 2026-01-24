@@ -5,30 +5,37 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Dumbbell, Salad, BarChart3, User, Settings } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { href: "/", icon: <Home size={22} />, label: "Home" },
-  { href: "/workout", icon: <Dumbbell size={22} />, label: "Workout" },
-  { href: "/nutrition", icon: <Salad size={22} />, label: "Nutrition" },
-  { href: "/summary", icon: <BarChart3 size={22} />, label: "Summary" },
-  { href: "/programs", icon: <Settings size={22} />, label: "Program" },
-  { href: "/profile", icon: <User size={22} />, label: "Profile" },
+  { href: "/workout", icon: <Dumbbell size={22} />, label: "Workout", protected: true },
+  { href: "/nutrition", icon: <Salad size={22} />, label: "Nutrition", protected: true },
+  { href: "/summary", icon: <BarChart3 size={22} />, label: "Summary", protected: true },
+  { href: "/programs", icon: <Settings size={22} />, label: "Program", protected: true },
+  { href: "/profile", icon: <User size={22} />, label: "Profile", protected: true },
 ];
 
 const FloatingNav = () => {
   const pathname = usePathname();
+  const { token } = useAuth();
   const [activeIndex, setActiveIndex] = useState(0);
   const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
+  // Filter nav items based on auth state
+  const visibleNavItems = token 
+    ? navItems 
+    : navItems.filter(item => !item.protected);
+
   // Sync active tab with current route
   useEffect(() => {
-    const matchIndex = navItems.findIndex((item) => pathname?.startsWith(item.href));
+    const matchIndex = visibleNavItems.findIndex((item) => pathname?.startsWith(item.href));
     if (matchIndex >= 0) {
       setActiveIndex(matchIndex);
     }
-  }, [pathname]);
+  }, [pathname, visibleNavItems]);
 
   // Update indicator position when active changes or resize
   useEffect(() => {
@@ -58,11 +65,13 @@ const FloatingNav = () => {
         ref={containerRef}
         className="relative flex items-center justify-between rounded-full border border-surface-highlight bg-surface-card/90 px-1 py-2 shadow-xl backdrop-blur"
       >
-        {navItems.map((item, index) => (
+        {visibleNavItems.map((item, index) => (
           <Link
             key={item.href}
             href={item.href}
-
+            ref={(el) => {
+              btnRefs.current[index] = el;
+            }}
             onClick={() => setActiveIndex(index)}
             className="relative flex flex-1 flex-col items-center justify-center gap-1 px-2 py-2 text-xs font-medium text-text-dim transition-colors hover:text-white"
           >

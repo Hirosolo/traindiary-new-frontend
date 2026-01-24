@@ -1,100 +1,77 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { fetchExercises, fetchWorkoutTypes } from "@/lib/api/workouts";
 
 export interface NewWorkoutSession {
   title: string;
   date: string;
   time: string;
+  type: string;
   note?: string;
   exercises: {
+    id: string | number;
     name: string;
-    sets: number;
-    reps: number;
+    reps: { rep: number; weight_kg?: number | null }[];
   }[];
 }
 
 interface Exercise {
-  id: string;
+  id: string | number;
   name: string;
-  category: string;
-  description: string;
+  category?: string;
+  description?: string;
   image?: string;
 }
 
 interface SelectedExercise extends Exercise {
-  sets: number;
-  reps: number;
+  reps: number[]; // per-set rep targets
 }
 
 interface LogWorkoutModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (workout: NewWorkoutSession) => void;
+  onSubmit: (workout: NewWorkoutSession) => Promise<void> | void;
 }
 
-// Mock exercise database - replace with API call later
-const EXERCISE_DATABASE: Exercise[] = [
+const FALLBACK_EXERCISES: Exercise[] = [
   {
-    id: "ex1",
+    id: "fallback-ex1",
     name: "Incline Dumbbell Press",
     category: "Chest",
     description: "Primary compound movement for upper pectoral development.",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBM-Jl5BpK35Y2oIgK9xHhNqwSNsvpIfPmZF4zp4Gr_ExrO8dYtFM9oWo1do-j_4ATVbdzEKy5bmv4Hm1A4GUAp7760Vd5-PUmY2XlJrV-BE8h8CVbmKBW1WRDMyPl0Bk08E6v3SNaDEoj3PAOMuT0L0c4sFWSmyZiB9uVCexHRY33lPpyf8EG_IJMjisUbKUxczlujByVKyLvjofaPfPJ-5Y6-7dTtwRvbm-M2R1P6JixJ5kkqa-HvApT9wIztshusf9FjqR05lMM",
   },
   {
-    id: "ex2",
+    id: "fallback-ex2",
     name: "Barbell Overhead Press",
     category: "Shoulders",
     description: "Strict standing military press for boulder shoulders.",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCRAbu-gKrCPTz_sMcwsGWOEF2ogoE7wcDFjEzIU4-YWAVVOG3nB2qmJ2GbqEoA4G2DL6HWKcGfa55c-BPKK6BFjPI8q0999SJ2L72Qq_LBPQkE1NKmvDpra0U1bRx-896x0kMj9dD1cKftKkAKXZFwq345NVmgT3KXxCAvLUqxYMlteWXt_paa5tcuOyQyBG-MXB0pqUKbjPDdCYLQyJwhd4fmSkY1iaXwz3Ut9EZhh6rCRRET64FWENQABl3j3HQdpwskXWU3IKk",
   },
   {
-    id: "ex3",
+    id: "fallback-ex3",
     name: "Lateral Raises",
     category: "Shoulders",
     description: "Isolation movement for lateral deltoid width.",
   },
   {
-    id: "ex4",
+    id: "fallback-ex4",
     name: "Tricep Pushdowns",
     category: "Triceps",
     description: "Cable isolation for tricep lateral head.",
   },
-  {
-    id: "ex5",
-    name: "Dips (Weighted)",
-    category: "Chest",
-    description: "Heavy compound for lower chest and triceps.",
-  },
-  {
-    id: "ex6",
-    name: "Bench Press",
-    category: "Chest",
-    description: "Classic compound movement for chest development.",
-  },
-  {
-    id: "ex7",
-    name: "Pull-ups",
-    category: "Back",
-    description: "Compound movement for back and biceps.",
-  },
-  {
-    id: "ex8",
-    name: "Barbell Squats",
-    category: "Legs",
-    description: "King of leg exercises for overall lower body.",
-  },
 ];
 
-const WORKOUT_TYPES = [
-  { id: "push", name: "Push", icon: "fitness_center", description: "Chest, Shoulders, Triceps" },
-  { id: "pull", name: "Pull", icon: "rowing", description: "Back, Biceps, Rear Delts" },
-  { id: "legs", name: "Legs", icon: "foot_bones", description: "Quads, Hamstrings, Calves" },
-  { id: "full", name: "Full Body", icon: "accessibility_new", description: "Total body conditioning" },
-  { id: "upper", name: "Upper", icon: "vertical_align_top", description: "All upper body groups" },
-  { id: "lower", name: "Lower", icon: "vertical_align_bottom", description: "All lower body groups" },
-];
+const WORKOUT_TYPE_ICONS: Record<string, string> = {
+  "Push": "fitness_center",
+  "Pull": "rowing",
+  "Legs": "foot_bones",
+  "Full Body": "accessibility_new",
+  "Upper": "vertical_align_top",
+  "Lower": "vertical_align_bottom",
+  "Upper Body": "vertical_align_top",
+  "Lower Body": "vertical_align_bottom",
+  "Cardio": "directions_run",
+};
 
 export default function LogWorkoutModal({
   isOpen,
@@ -106,37 +83,120 @@ export default function LogWorkoutModal({
   const [workoutType, setWorkoutType] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
+  const [note, setNote] = useState<string>("");
+  const [workoutTypes, setWorkoutTypes] = useState<string[]>([]);
+  const [isLoadingExercises, setIsLoadingExercises] = useState(false);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadExercises = async () => {
+      setIsLoadingExercises(true);
+      setLoadError(null);
+      try {
+        const exercises = await fetchExercises();
+        const normalized = exercises.map((ex) => ({
+          id: ex.exercise_id ?? ex.name,
+          name: ex.name,
+          category: ex.category,
+          description: ex.description,
+          image: ex.image,
+        }));
+        setAvailableExercises(normalized);
+      } catch (error) {
+        console.error("Failed to fetch exercises", error);
+        setLoadError(error instanceof Error ? error.message : "Unable to load exercises");
+        setAvailableExercises(FALLBACK_EXERCISES);
+      } finally {
+        setIsLoadingExercises(false);
+      }
+    };
+
+    const loadWorkoutTypes = async () => {
+      setIsLoadingTypes(true);
+      try {
+        const types = await fetchWorkoutTypes();
+        setWorkoutTypes(types);
+      } catch (error) {
+        console.error("Failed to fetch workout types", error);
+        setWorkoutTypes(["Push", "Pull", "Legs", "Cardio", "Full Body"]);
+      } finally {
+        setIsLoadingTypes(false);
+      }
+    };
+
+    loadExercises();
+    loadWorkoutTypes();
+  }, [isOpen]);
 
   const filteredExercises = useMemo(() => {
-    return EXERCISE_DATABASE.filter((ex) => {
+    return availableExercises.filter((ex) => {
       const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = categoryFilter === "All" || ex.category === categoryFilter;
+      const matchesCategory =
+        categoryFilter === "All" || (ex.category || "Uncategorized") === categoryFilter;
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, categoryFilter]);
+  }, [availableExercises, searchQuery, categoryFilter]);
 
   const categories = useMemo(() => {
-    const cats = new Set(EXERCISE_DATABASE.map((ex) => ex.category));
+    const cats = new Set(availableExercises.map((ex) => ex.category || "Uncategorized"));
     return ["All", ...Array.from(cats)];
-  }, []);
+  }, [availableExercises]);
 
   const toggleExerciseSelection = (exercise: Exercise) => {
     const isSelected = selectedExercises.some((ex) => ex.id === exercise.id);
     if (isSelected) {
       setSelectedExercises(selectedExercises.filter((ex) => ex.id !== exercise.id));
     } else {
-      setSelectedExercises([...selectedExercises, { ...exercise, sets: 3, reps: 12 }]);
+      setSelectedExercises([
+        ...selectedExercises,
+        { ...exercise, reps: [12, 12, 12] },
+      ]);
     }
   };
 
-  const updateExerciseConfig = (id: string, field: "sets" | "reps", value: number) => {
-    setSelectedExercises(
-      selectedExercises.map((ex) => (ex.id === id ? { ...ex, [field]: value } : ex))
+  const updateExerciseRepRow = (id: string | number, index: number, value: number) => {
+    setSelectedExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === id
+          ? {
+              ...ex,
+              reps: ex.reps.map((repVal, i) => (i === index ? (value > 0 ? value : 1) : repVal)),
+            }
+          : ex
+      )
     );
   };
 
-  const removeExercise = (id: string) => {
+  const addExerciseRepRow = (id: string | number) => {
+    setSelectedExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === id
+          ? {
+              ...ex,
+              reps: [...ex.reps, ex.reps[ex.reps.length - 1] ?? 10],
+            }
+          : ex
+      )
+    );
+  };
+
+  const removeExerciseRepRow = (id: string | number, index: number) => {
+    setSelectedExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== id) return ex;
+        const next = ex.reps.filter((_, i) => i !== index);
+        return { ...ex, reps: next.length > 0 ? next : [10] };
+      })
+    );
+  };
+
+  const removeExercise = (id: string | number) => {
     setSelectedExercises(selectedExercises.filter((ex) => ex.id !== id));
   };
 
@@ -160,31 +220,45 @@ export default function LogWorkoutModal({
     }
   };
 
-  const handleSubmit = () => {
-    const selectedType = WORKOUT_TYPES.find((t) => t.id === workoutType);
+  const handleSubmit = async () => {
+    if (selectedExercises.length === 0) {
+      alert("Please select at least one exercise");
+      return;
+    }
 
-    onSubmit({
-      title: selectedType?.name || "Workout",
-      date,
-      time: new Date().toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      }),
-      exercises: selectedExercises.map((ex) => ({
-        name: ex.name,
-        sets: ex.sets,
-        reps: ex.reps,
-      })),
-    });
+    setIsSubmitting(true);
 
-    // Reset form
-    setStep(1);
-    setDate(new Date().toISOString().split("T")[0]);
-    setWorkoutType("");
-    setSelectedExercises([]);
-    setSearchQuery("");
-    setCategoryFilter("All");
+    try {
+      await onSubmit({
+        title: workoutType || "Workout",
+        date,
+        time: new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        type: workoutType || "Workout",
+        note: note || undefined,
+        exercises: selectedExercises.map((ex) => ({
+          id: ex.id,
+          name: ex.name,
+          reps: ex.reps.map((rep) => ({ rep, weight_kg: null })),
+        })),
+      });
+
+      setStep(1);
+      setDate(new Date().toISOString().split("T")[0]);
+      setWorkoutType("");
+      setSelectedExercises([]);
+      setSearchQuery("");
+      setCategoryFilter("All");
+      setNote("");
+    } catch (error) {
+      console.error("Failed to create session", error);
+      alert(error instanceof Error ? error.message : "Unable to create session");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -193,7 +267,7 @@ export default function LogWorkoutModal({
     }
   };
 
-  const totalSets = selectedExercises.reduce((sum, ex) => sum + ex.sets, 0);
+  const totalSets = selectedExercises.reduce((sum, ex) => sum + ex.reps.length, 0);
 
   if (!isOpen) return null;
 
@@ -211,8 +285,7 @@ export default function LogWorkoutModal({
                 New Session
               </h2>
               <p className="text-text-dim text-[10px] mt-1 uppercase tracking-widest font-semibold">
-                Step {step < 10 ? `0${step}` : step}:{" "}
-                {step === 1 ? "Schedule & Type" : step === 2 ? "Select Exercises" : "Finalize Plan"}
+                Step {step < 10 ? `0${step}` : step}: {step === 1 ? "Schedule & Type" : step === 2 ? "Select Exercises" : "Finalize Plan"}
               </p>
             </div>
             <button
@@ -251,39 +324,57 @@ export default function LogWorkoutModal({
                 <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-[0.2em] mb-4">
                   Workout Type
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {WORKOUT_TYPES.map((type) => (
-                    <button
-                      key={type.id}
-                      type="button"
-                      onClick={() => setWorkoutType(type.id)}
-                      className={`bg-surface-card border rounded-2xl p-4 text-left relative overflow-hidden group transition-colors ${
-                        workoutType === type.id
-                          ? "border-primary/40"
-                          : "border-white/5 hover:border-white/20"
-                      }`}
-                    >
-                      {workoutType === type.id && (
-                        <div className="absolute top-0 right-0 w-8 h-8 bg-primary/10 rounded-bl-2xl flex items-center justify-center">
-                          <span className="material-symbols-outlined text-sm text-primary">
-                            check_circle
-                          </span>
-                        </div>
-                      )}
-                      <span
-                        className={`material-symbols-outlined mb-2 ${
-                          workoutType === type.id ? "text-primary" : "text-text-dim"
+                {isLoadingTypes ? (
+                  <div className="text-center py-8 text-text-dim">
+                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {workoutTypes.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setWorkoutType(type)}
+                        className={`bg-surface-card border rounded-2xl p-4 text-left relative overflow-hidden group transition-colors ${
+                          workoutType === type
+                            ? "border-primary/40"
+                            : "border-white/5 hover:border-white/20"
                         }`}
                       >
-                        {type.icon}
-                      </span>
-                      <p className="font-display font-bold text-sm uppercase tracking-tight">
-                        {type.name}
-                      </p>
-                      <p className="text-[10px] text-text-dim">{type.description}</p>
-                    </button>
-                  ))}
-                </div>
+                        {workoutType === type && (
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-primary/10 rounded-bl-2xl flex items-center justify-center">
+                            <span className="material-symbols-outlined text-sm text-primary">
+                              check_circle
+                            </span>
+                          </div>
+                        )}
+                        <span
+                          className={`material-symbols-outlined mb-2 ${
+                            workoutType === type ? "text-primary" : "text-text-dim"
+                          }`}
+                        >
+                          {WORKOUT_TYPE_ICONS[type] || "fitness_center"}
+                        </span>
+                        <p className="font-display font-bold text-sm uppercase tracking-tight">
+                          {type}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-[0.2em] mb-4">
+                  Note (optional)
+                </h3>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={3}
+                  placeholder="Add a note about this session"
+                  className="w-full bg-surface-card border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
               </div>
             </div>
           )}
@@ -324,6 +415,15 @@ export default function LogWorkoutModal({
               </div>
 
               <div className="space-y-4">
+                {isLoadingExercises && (
+                  <p className="text-sm text-text-dim">Loading exercises...</p>
+                )}
+                {loadError && !isLoadingExercises && (
+                  <p className="text-xs text-red-400">{loadError}</p>
+                )}
+                {!isLoadingExercises && filteredExercises.length === 0 && (
+                  <p className="text-sm text-text-dim">No exercises available. Try another filter.</p>
+                )}
                 {filteredExercises.map((exercise) => {
                   const isSelected = selectedExercises.some((ex) => ex.id === exercise.id);
                   return (
@@ -429,41 +529,59 @@ export default function LogWorkoutModal({
                         </span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-background-dark/50 rounded-xl p-3 border border-white/5">
-                        <label className="block text-[9px] font-bold text-text-dim uppercase tracking-wider mb-2">
-                          Sets
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[9px] font-bold text-text-dim uppercase tracking-wider">
+                          Sets & Reps
                         </label>
-                        <div className="flex items-center">
-                          <input
-                            type="number"
-                            value={exercise.sets}
-                            onChange={(e) =>
-                              updateExerciseConfig(exercise.id, "sets", parseInt(e.target.value) || 3)
-                            }
-                            min="1"
-                            max="10"
-                            className="w-full bg-transparent border-none p-0 text-xl font-display font-bold focus:ring-0"
-                          />
-                          <span className="text-[10px] font-bold text-text-dim">x</span>
+                        <div className="flex items-center gap-2 text-[10px] text-text-dim">
+                          <span>{exercise.reps.length} set{exercise.reps.length !== 1 ? "s" : ""}</span>
+                          <button
+                            type="button"
+                            onClick={() => addExerciseRepRow(exercise.id)}
+                            className="px-2 py-1 rounded-lg bg-primary/10 text-primary font-bold uppercase tracking-wider text-[10px] hover:bg-primary/20"
+                          >
+                            + Add Set
+                          </button>
                         </div>
                       </div>
-                      <div className="bg-background-dark/50 rounded-xl p-3 border border-white/5">
-                        <label className="block text-[9px] font-bold text-text-dim uppercase tracking-wider mb-2">
-                          Reps
-                        </label>
-                        <div className="flex items-center">
-                          <input
-                            type="number"
-                            value={exercise.reps}
-                            onChange={(e) =>
-                              updateExerciseConfig(exercise.id, "reps", parseInt(e.target.value) || 12)
-                            }
-                            min="1"
-                            max="50"
-                            className="w-full bg-transparent border-none p-0 text-xl font-display font-bold focus:ring-0"
-                          />
-                        </div>
+
+                      <div className="space-y-2">
+                        {exercise.reps.map((repVal, index) => (
+                          <div
+                            key={`${exercise.id}-rep-${index}`}
+                            className="grid grid-cols-[1fr_auto] gap-2 items-center bg-background-dark/40 border border-white/5 rounded-lg p-2"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-[11px] font-bold text-text-dim w-14">Set {index + 1}</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={repVal}
+                                onChange={(e) =>
+                                  updateExerciseRepRow(
+                                    exercise.id,
+                                    index,
+                                    parseInt(e.target.value) || 1
+                                  )
+                                }
+                                className="w-20 bg-surface-highlight border-none rounded text-sm p-2 text-center font-bold text-primary focus:ring-1 focus:ring-primary"
+                              />
+                              <span className="text-[11px] font-bold text-text-dim">reps</span>
+                            </div>
+                            {exercise.reps.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeExerciseRepRow(exercise.id, index)}
+                                className="text-text-dim hover:text-red-400 transition-colors flex items-center gap-1 text-[11px] font-bold"
+                              >
+                                <span className="material-symbols-outlined text-sm">delete</span>
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -529,17 +647,24 @@ export default function LogWorkoutModal({
             <button
               type="button"
               onClick={step === 3 ? handleSubmit : handleNext}
-              className="flex-1 bg-primary text-white font-bold py-3 lg:py-4 rounded-xl shadow-[0_8px_30px_rgba(59,130,246,0.3)] uppercase tracking-widest text-[10px] lg:text-[11px] flex items-center justify-center gap-2 hover:brightness-110 transition-all"
+              disabled={isSubmitting || (step === 2 && isLoadingExercises)}
+              className={`flex-1 bg-primary text-white font-bold py-3 lg:py-4 rounded-xl shadow-[0_8px_30px_rgba(59,130,246,0.3)] uppercase tracking-widest text-[10px] lg:text-[11px] flex items-center justify-center gap-2 transition-all ${
+                isSubmitting || (step === 2 && isLoadingExercises)
+                  ? "opacity-60 cursor-not-allowed"
+                  : "hover:brightness-110"
+              }`}
             >
               {step === 3 ? (
-                <span className="hidden sm:inline">CONFIRM & CREATE SESSION</span>
+                <span className="hidden sm:inline">
+                  {isSubmitting ? "Creating..." : "Confirm & Create Session"}
+                </span>
               ) : (
                 <>
                   Continue <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </>
               )}
               {step === 3 && (
-                <span className="sm:hidden">CREATE SESSION</span>
+                <span className="sm:hidden">{isSubmitting ? "Working..." : "Create Session"}</span>
               )}
             </button>
           </div>

@@ -2,12 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignInPage() {
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -15,12 +19,22 @@ export default function SignInPage() {
       ...prev,
       [name]: value,
     }));
+    setError(''); // Clear error when user types
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Sign in form submitted:', formData);
-    // Handle sign in logic here
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await login(formData.email, formData.password);
+      // Router push is handled in AuthContext
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -68,6 +82,13 @@ export default function SignInPage() {
         {/* Form Section */}
         <div className="flex-1 flex flex-col">
           <form className="space-y-8" onSubmit={handleSubmit}>
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded text-sm">
+                {error}
+              </div>
+            )}
+
             {/* Email */}
             <div className="group">
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-text-dim group-focus-within:text-electric-blue transition-colors">
@@ -79,7 +100,9 @@ export default function SignInPage() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="name@performance.com"
-                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10"
+                required
+                disabled={isLoading}
+                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 disabled:opacity-50"
               />
             </div>
 
@@ -94,7 +117,9 @@ export default function SignInPage() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10"
+                required
+                disabled={isLoading}
+                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 disabled:opacity-50"
               />
               <div className="flex justify-end mt-2">
                 <Link
@@ -110,10 +135,11 @@ export default function SignInPage() {
             <div className="pt-6">
               <button
                 type="submit"
-                className="w-full bg-electric-blue border border-electric-blue text-white py-5 rounded-none transition-all duration-300 hover:bg-blue-600 active:scale-[0.98] shadow-[0_0_30px_rgba(59,130,246,0.4),inset_0_0_10px_rgba(59,130,246,0.2)] cursor-pointer"
+                disabled={isLoading}
+                className="w-full bg-electric-blue border border-electric-blue text-white py-5 rounded-none transition-all duration-300 hover:bg-blue-600 active:scale-[0.98] shadow-[0_0_30px_rgba(59,130,246,0.4),inset_0_0_10px_rgba(59,130,246,0.2)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="font-bold text-xs uppercase tracking-[0.4em]">
-                  ENTER PLATFORM
+                  {isLoading ? 'SIGNING IN...' : 'ENTER PLATFORM'}
                 </span>
               </button>
             </div>
