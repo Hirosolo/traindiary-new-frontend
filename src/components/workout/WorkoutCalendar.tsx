@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 export interface WorkoutSession {
   id: string;
@@ -16,6 +17,7 @@ export interface DayData {
   isCurrentMonth: boolean;
   sessions: WorkoutSession[];
   isToday?: boolean;
+  isPR?: boolean;
 }
 
 interface WorkoutCalendarProps {
@@ -41,10 +43,16 @@ export default function WorkoutCalendar({
 
   const handleDayClick = (day: number, hasSessions: boolean) => {
     if (!hasSessions) return;
-    setExpandedDay(expandedDay === day ? null : day);
+    setExpandedDay(day);
   };
 
+  const expandedDayData = useMemo(
+    () => days.find((d) => d.isCurrentMonth && d.day === expandedDay),
+    [days, expandedDay]
+  );
+
   return (
+    <>
     <main className="flex-1 bg-background-dark overflow-y-auto p-4 lg:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 lg:mb-8 gap-4">
@@ -94,10 +102,9 @@ export default function WorkoutCalendar({
             return (
               <div
                 key={index}
-                className={`bg-background-dark p-2 lg:p-3 relative group transition-colors ${
+                className={`bg-background-dark p-2 lg:p-3 relative group transition-colors h-[120px] lg:h-[144px] overflow-visible ${
                   hasSessions ? "cursor-pointer hover:bg-surface-dark" : ""
                 } ${dayData.isToday ? "ring-2 ring-primary ring-inset" : ""}`}
-                style={{ minHeight: isExpanded ? "auto" : "5rem" }}
                 onClick={() => handleDayClick(dayData.day, hasSessions)}
               >
                 <span
@@ -115,76 +122,33 @@ export default function WorkoutCalendar({
                 </span>
 
                 {/* Session indicators when collapsed */}
-                {hasSessions && !isExpanded && (
-                  <div className="mt-1 lg:mt-2 space-y-1">
-                    {completedSessions > 0 && (
-                      <div className="w-full h-0.5 lg:h-1 bg-primary rounded-full"></div>
-                    )}
-                    {dayData.sessions.slice(0, 1).map((session, idx) => (
-                      <div
-                        key={idx}
-                        className={`${
-                          session.status === "complete"
-                            ? "bg-primary text-white"
-                            : "bg-primary/20 text-primary"
-                        } text-[8px] lg:text-[10px] px-1 lg:px-1.5 py-0.5 rounded font-bold uppercase truncate ${
-                          dayData.isPR ? "shadow-lg shadow-primary/20" : ""
-                        }`}
-                      >
-                        {session.title}
-                      </div>
-                    ))}
-                    {dayData.sessions.length > 1 && (
-                      <div className="text-[7px] lg:text-[9px] text-text-dim font-bold px-1 lg:px-1.5">
-                        +{dayData.sessions.length - 1} more
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Expanded session details */}
-                {isExpanded && hasSessions && (
-                  <div className="mt-2 lg:mt-3 space-y-2 z-20" onClick={(e) => e.stopPropagation()}>
-                    {dayData.sessions.map((session) => (
+                {hasSessions && (
+                  <div
+                    className="mt-2 lg:mt-3 grid grid-rows-3 gap-1.5"
+                    style={{ height: "calc(100% - 28px)" }}
+                  >
+                    {dayData.sessions.slice(0, 3).map((session) => (
                       <div
                         key={session.id}
-                        onClick={() => onSessionClick(session, dayData.day)}
-                        className="bg-surface-card p-2 lg:p-3 rounded-lg border border-white/5 hover:border-primary/50 transition-colors cursor-pointer"
+                        className="relative rounded-md overflow-hidden border border-white/5 bg-white/5 h-full"
                       >
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-[10px] lg:text-xs font-bold text-white truncate">
-                              {session.title}
-                            </h4>
-                            {session.time && (
-                              <p className="text-[8px] lg:text-[9px] text-text-dim uppercase font-bold">
-                                {session.time}
-                              </p>
-                            )}
-                            {session.exercises && session.exercises.length > 0 && (
-                              <p className="text-[9px] lg:text-[10px] text-text-dim mt-1 line-clamp-2">
-                                {session.exercises.slice(0, 3).join(" • ")}
-                                {session.exercises.length > 3 ? ` +${session.exercises.length - 3}` : ""}
-                              </p>
-                            )}
-                          </div>
-                          <div
-                            className={`shrink-0 text-[8px] lg:text-[9px] font-bold px-1.5 lg:px-2 py-0.5 rounded ${
-                              session.status === "complete"
-                                ? "bg-primary/20 text-primary"
-                                : "bg-white/5 text-text-dim"
-                            }`}
-                          >
-                            {session.status === "complete" ? "✓ Done" : "Pending"}
-                          </div>
+                        <div
+                          className={`absolute inset-0 transition-all duration-300 ease-out origin-left ${
+                            session.status === "complete" ? "bg-primary" : "bg-primary/30"
+                          }`}
+                          style={{ opacity: 0.85, transform: isExpanded ? "scaleX(1)" : "scaleX(0.98)" }}
+                        />
+                        <div className="relative flex items-center justify-between px-2 text-[8px] lg:text-[9px] font-semibold text-white/80 h-full">
+                          <span className="truncate">{session.title}</span>
+                          {session.time && <span className="text-[7px] lg:text-[8px] text-white/60">{session.time}</span>}
                         </div>
-                        {session.note && (
-                          <p className="text-[9px] lg:text-[10px] text-text-dim mt-1 line-clamp-2">
-                            {session.note}
-                          </p>
-                        )}
                       </div>
                     ))}
+                    {dayData.sessions.length > 3 && (
+                      <div className="text-[9px] lg:text-[10px] text-text-dim font-bold px-0.5">
+                        +{dayData.sessions.length - 3} more hidden
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -193,5 +157,95 @@ export default function WorkoutCalendar({
         </div>
       </div>
     </main>
+    <AnimatePresence>
+      {expandedDayData && (
+        <motion.div
+          className="fixed inset-0 z-40 flex items-center justify-center px-4 sm:px-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setExpandedDay(null)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
+          <motion.div
+            className="relative w-full max-w-xl lg:max-w-3xl bg-surface-card border border-white/10 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden flex flex-col"
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 240, damping: 22 }}
+          >
+            <div className="flex items-start justify-between gap-3 p-4 lg:p-5 border-b border-white/10">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-text-dim font-bold">
+                  {month} {expandedDayData.day}, {year}
+                </p>
+                <p className="text-lg lg:text-xl font-display font-bold text-white">
+                  {expandedDayData.sessions.length} workout{expandedDayData.sessions.length > 1 ? "s" : ""}
+                </p>
+              </div>
+              <button
+                onClick={() => setExpandedDay(null)}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="px-4 lg:px-5 py-3 lg:py-4 space-y-3 max-h-[70vh] overflow-y-auto">
+              {expandedDayData.sessions.map((session, idx) => (
+                <motion.div
+                  key={session.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05, type: "spring", stiffness: 240, damping: 20 }}
+                  className="bg-surface-dark/80 rounded-xl border border-white/5 p-3 lg:p-4 shadow-md shadow-black/20 flex flex-col gap-2"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm lg:text-base font-semibold text-white truncate">{session.title}</p>
+                      {session.time && (
+                        <p className="text-[11px] lg:text-xs text-text-dim uppercase font-bold">{session.time}</p>
+                      )}
+                      {session.exercises && session.exercises.length > 0 && (
+                        <p className="text-xs lg:text-sm text-text-dim mt-1 line-clamp-2">
+                          {session.exercises.slice(0, 4).join(" • ")}
+                          {session.exercises.length > 4 ? ` +${session.exercises.length - 4}` : ""}
+                        </p>
+                      )}
+                    </div>
+                    <span
+                      className={`shrink-0 text-[11px] lg:text-xs font-bold px-2 py-1 rounded-md ${
+                        session.status === "complete" ? "bg-primary/20 text-primary" : "bg-white/10 text-text-dim"
+                      }`}
+                    >
+                      {session.status === "complete" ? "Done" : "Pending"}
+                    </span>
+                  </div>
+                  {session.note && (
+                    <p className="text-xs lg:text-sm text-text-dim leading-relaxed">{session.note}</p>
+                  )}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => {
+                        onSessionClick(session, expandedDayData.day);
+                        setExpandedDay(null);
+                      }}
+                      className="text-xs lg:text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                    >
+                      Open details
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }

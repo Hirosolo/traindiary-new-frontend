@@ -268,8 +268,9 @@ export async function fetchWorkoutTypes(): Promise<string[]> {
   try {
     const response = await apiFetch<{ types: string[] }>(`/workout-sessions/types`);
     const types = response.types ?? [];
-    // Ensure basic types are always included
-    return types.length > 0 ? types : BASIC_WORKOUT_TYPES;
+    // Always include basic types plus any unique values from API
+    const merged = Array.from(new Set([...BASIC_WORKOUT_TYPES, ...types.filter(Boolean)]));
+    return merged.length > 0 ? merged : BASIC_WORKOUT_TYPES;
   } catch (error) {
     console.warn("Failed to fetch workout types from API, using defaults", error);
     return BASIC_WORKOUT_TYPES;
