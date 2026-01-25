@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 
@@ -13,6 +13,23 @@ interface PageLoaderProps {
   className?: string;
 }
 
+// Simple global store to allow any page to hold/release the loader without rendering a second instance.
+// Use setPageLoaderOverride(true) to force show; setPageLoaderOverride(null) to release to default behavior.
+let overrideValue: boolean | null = null;
+const overrideListeners = new Set<() => void>();
+
+const setPageLoaderOverride = (value: boolean | null) => {
+  overrideValue = value;
+  overrideListeners.forEach((l) => l());
+};
+
+const subscribeOverride = (listener: () => void) => {
+  overrideListeners.add(listener);
+  return () => overrideListeners.delete(listener);
+};
+
+const getOverrideSnapshot = () => overrideValue;
+
 // Shows a full-screen loader on initial load and briefly after each route change.
 // Because Next.js App Router doesn't expose route-change start events, this fires
 // once the new route is ready to render, then fades out after a short delay.
@@ -24,6 +41,7 @@ const PageLoader = ({
   const pathname = usePathname();
   const [visible, setVisible] = useState(true);
   const timers = useRef<number[]>([]);
+  const override = useSyncExternalStore(subscribeOverride, getOverrideSnapshot, getOverrideSnapshot);
 
   const clearTimers = () => {
     timers.current.forEach((t) => window.clearTimeout(t));
@@ -44,9 +62,11 @@ const PageLoader = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, minimumVisibleMs]);
 
+  const effectiveVisible = typeof override === "boolean" ? override : visible;
+
   return (
     <AnimatePresence>
-      {visible && (
+      {effectiveVisible && (
         <motion.div
           className={cn(
             "fixed inset-0 z-[120] bg-background-dark/90 backdrop-blur-sm flex items-center justify-center",
@@ -70,3 +90,4 @@ const PageLoader = ({
 };
 
 export { PageLoader };
+export { setPageLoaderOverride };
