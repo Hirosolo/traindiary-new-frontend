@@ -5,6 +5,7 @@ import { CartesianGrid, Line, LineChart, Tooltip, XAxis } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/line-chart";
 import { CalendarLume } from "@/components/ui/calendar-lume";
 import NavBar from "@/components/ui/navbar";
+import { CircularProgress } from "@/components/ui/circular-progress";
 
 type SummaryPoint = {
   label: string;
@@ -114,84 +115,55 @@ export default function SummaryPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="px-5 space-y-3">
-          <div className="flex items-center justify-between rounded-2xl p-4 bg-surface-card border border-white/5">
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500">
-                <span className="material-symbols-outlined text-xl">fitness_center</span>
-              </div>
-              <div>
-                <span className="text-[9px] font-bold tracking-[0.2em] text-text-dim uppercase">
-                  Workouts
-                </span>
-                <p className="text-xl font-bold font-display text-white leading-none mt-0.5">
-                  {totals.totalWorkouts}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[8px] text-text-dim uppercase tracking-wider">In period</p>
-            </div>
+        {/* Stats Circular Graphs */}
+        <div className="px-5 grid grid-cols-2 lg:grid-cols-4 gap-6 py-8">
+          <div className="flex justify-center">
+            <CircularProgress
+              value={totals.totalWorkouts}
+              max={20}
+              label="Workouts"
+              icon="fitness_center"
+              color="text-blue-500"
+              size={160}
+              strokeWidth={7}
+            />
           </div>
 
-          <div className="flex items-center justify-between rounded-2xl p-4 bg-surface-card border border-white/5">
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-500">
-                <span className="material-symbols-outlined text-xl">local_fire_department</span>
-              </div>
-              <div>
-                <span className="text-[9px] font-bold tracking-[0.2em] text-text-dim uppercase">
-                  Avg Kcal
-                </span>
-                <p className="text-xl font-bold font-display text-white leading-none mt-0.5">
-                  {totals.avgKcal.toLocaleString()}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[8px] text-text-dim uppercase tracking-wider">Per day</p>
-            </div>
+          <div className="flex justify-center">
+            <CircularProgress
+              value={totals.avgKcal}
+              max={3500}
+              label="Avg Kcal"
+              icon="local_fire_department"
+              color="text-orange-500"
+              size={160}
+              strokeWidth={7}
+            />
           </div>
 
-          <div className="flex items-center justify-between rounded-2xl p-4 bg-surface-card border border-white/5">
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500">
-                <span className="material-symbols-outlined text-xl">egg_alt</span>
-              </div>
-              <div>
-                <span className="text-[9px] font-bold tracking-[0.2em] text-text-dim uppercase">
-                  Avg Protein
-                </span>
-                <p className="text-xl font-bold font-display text-white leading-none mt-0.5">
-                  {totals.avgProtein}
-                  <span className="text-xs font-normal text-text-dim ml-0.5">g</span>
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[8px] text-text-dim uppercase tracking-wider">Per day</p>
-            </div>
+          <div className="flex justify-center">
+            <CircularProgress
+              value={totals.avgProtein}
+              max={250}
+              label="Avg Protein"
+              unit="g"
+              icon="egg_alt"
+              color="text-purple-500"
+              size={160}
+              strokeWidth={7}
+            />
           </div>
 
-          <div className="relative overflow-hidden flex items-center justify-between rounded-2xl p-5 bg-primary text-white shadow-[0_0_15px_rgba(59,130,246,0.4)] border border-blue-400/20">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-30"></div>
-            <div className="relative flex items-center gap-4">
-              <div className="p-2.5 rounded-xl bg-white/20">
-                <span className="material-symbols-outlined text-white text-xl">bolt</span>
-              </div>
-              <div>
-                <span className="text-[9px] font-bold tracking-[0.2em] text-blue-100 uppercase">
-                  GR Score
-                </span>
-                <p className="text-3xl font-bold font-display italic leading-none mt-0.5">
-                  {totals.avgGR}
-                </p>
-              </div>
-            </div>
-            <div className="relative text-right">
-              <p className="text-[8px] text-blue-100 uppercase tracking-wider">Period avg</p>
-            </div>
+          <div className="flex justify-center">
+            <CircularProgress
+              value={totals.avgGR}
+              max={100}
+              label="GR Score"
+              icon="bolt"
+              color="text-primary"
+              size={160}
+              strokeWidth={7}
+            />
           </div>
         </div>
 
