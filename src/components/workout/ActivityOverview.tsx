@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { CalendarLume } from "@/components/ui/calendar-lume";
+
 interface ActivityOverviewProps {
   currentStreak: number;
   totalWorkouts: number;
@@ -22,49 +25,48 @@ export default function ActivityOverview({
   onMonthYearChange,
 }: ActivityOverviewProps) {
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-  const handlePrev = () => {
-    if (onMonthYearChange && selectedMonth !== undefined && selectedYear !== undefined) {
-      const newMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
-      const newYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
-      onMonthYearChange(newYear, newMonth);
-    }
-  };
-
-  const handleNext = () => {
-    if (onMonthYearChange && selectedMonth !== undefined && selectedYear !== undefined) {
-      const newMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
-      const newYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
-      onMonthYearChange(newYear, newMonth);
-    }
-  };
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarStep, setCalendarStep] = useState<"year" | "month">("year");
 
   return (
     <aside className="w-72 border-r border-white/5 bg-surface-dark p-6 flex flex-col gap-8 shrink-0 overflow-y-auto">
       {onMonthYearChange && selectedMonth !== undefined && selectedYear !== undefined ? (
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.2em] text-text-dim uppercase">Period</p>
-            <p className="text-lg font-display font-bold leading-tight">
-              {monthNames[selectedMonth]} {selectedYear}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrev}
-              className="size-9 rounded-full border border-white/10 text-white/80 hover:text-white hover:border-white/30 transition-colors flex items-center justify-center"
-              aria-label="Previous month"
-            >
-              <span className="material-symbols-outlined text-base">chevron_left</span>
-            </button>
-            <button
-              onClick={handleNext}
-              className="size-9 rounded-full border border-white/10 text-white/80 hover:text-white hover:border-white/30 transition-colors flex items-center justify-center"
-              aria-label="Next month"
-            >
-              <span className="material-symbols-outlined text-base">chevron_right</span>
-            </button>
-          </div>
+        <div className="relative">
+          <button
+            onClick={() => {
+              setCalendarStep("year");
+              setIsCalendarOpen(true);
+            }}
+            className="w-full bg-surface-card border border-white/5 rounded-xl px-4 py-3 hover:border-white/10 transition-colors text-left flex flex-col items-start gap-1"
+          >
+            <span className="text-[10px] uppercase tracking-[0.16em] text-text-dim font-bold block mb-2">
+              Select Period
+            </span>
+            <div className="flex flex-col">
+              <span className="text-sm text-text-dim font-medium">
+                {monthNames[selectedMonth]}
+              </span>
+              <p className="text-2xl font-display font-bold text-white">
+                {selectedYear}
+              </p>
+            </div>
+          </button>
+
+          {/* Calendar Modal */}
+          {isCalendarOpen && (
+            <div className="absolute top-full left-0 mt-3 z-50 animate-in fade-in duration-200">
+              <CalendarLume
+                defaultMonth={selectedMonth}
+                defaultYear={selectedYear}
+                onMonthYearChange={(year, month) => {
+                  onMonthYearChange(year, month);
+                  setIsCalendarOpen(false);
+                }}
+                initialStep={calendarStep}
+                onClose={() => setIsCalendarOpen(false)}
+              />
+            </div>
+          )}
         </div>
       ) : null}
 

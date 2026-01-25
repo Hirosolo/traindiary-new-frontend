@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import NavBar from "@/components/ui/navbar";
+import { CalendarLume } from "@/components/ui/calendar-lume";
 import ActivityOverview from "@/components/workout/ActivityOverview";
 import WorkoutCalendar, {
   WorkoutSession,
@@ -33,6 +34,8 @@ export default function WorkoutPage() {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarStep, setCalendarStep] = useState<"year" | "month">("year");
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutDetailsData | null>(null);
   const [isLogWorkoutModalOpen, setIsLogWorkoutModalOpen] = useState(false);
   const [, setIsLoadingSessions] = useState(false);
@@ -43,6 +46,7 @@ export default function WorkoutPage() {
   const handleMonthYearChange = (year: number, month: number) => {
     setSelectedYear(year);
     setSelectedMonth(month);
+    setIsCalendarOpen(false);
   };
 
   const parseSessionDate = (date: string | undefined) => {
@@ -763,13 +767,51 @@ export default function WorkoutPage() {
       <main className="pt-16 pb-24 overflow-y-auto">
         <div className="p-5 space-y-6">
           {/* Header */}
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold font-display tracking-tight text-white uppercase italic leading-tight">
-              Workout
-            </h1>
-            <p className="text-[11px] text-text-dim mt-0.5 font-medium leading-relaxed">
-              Track your training sessions.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold font-display tracking-tight text-white uppercase italic leading-tight">
+                Workout
+              </h1>
+              <p className="text-[11px] text-text-dim mt-0.5 font-medium leading-relaxed">
+                Track your training sessions.
+              </p>
+            </div>
+
+            {/* Period Selector - mobile/tablet only */}
+            <div className="relative max-w-xs w-full sm:w-auto lg:hidden">
+              <button
+                onClick={() => {
+                  setCalendarStep("year");
+                  setIsCalendarOpen(true);
+                }}
+                className="w-full bg-surface-card border border-white/5 rounded-xl px-4 py-3 hover:border-white/10 transition-colors text-left flex flex-col items-start gap-1"
+              >
+                <span className="text-[10px] uppercase tracking-[0.16em] text-text-dim font-bold block mb-1">
+                  Select Period
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-sm text-text-dim font-medium">
+                    {monthNames[selectedMonth]}
+                  </span>
+                  <p className="text-2xl font-display font-bold text-white">
+                    {selectedYear}
+                  </p>
+                </div>
+              </button>
+
+              {/* Calendar Modal - Fixed Position */}
+              {isCalendarOpen && (
+                <div className="absolute top-full left-0 mt-3 z-50 animate-in fade-in duration-200">
+                  <CalendarLume
+                    defaultMonth={selectedMonth}
+                    defaultYear={selectedYear}
+                    onMonthYearChange={handleMonthYearChange}
+                    initialStep={calendarStep}
+                    onClose={() => setIsCalendarOpen(false)}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {errorMessage && (

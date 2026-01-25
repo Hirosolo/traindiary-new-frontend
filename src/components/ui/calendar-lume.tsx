@@ -35,12 +35,23 @@ function CalendarLume({ onMonthYearChange, onClose, defaultYear, defaultMonth, i
   return (
     <div className="rounded-xl bg-black/95 w-full max-w-md border border-border/60 p-4">
       {/* Header */}
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="font-semibold text-lg">
-          {step === "year" && "Select a Year"}
-          {step === "month" && `Year ${selectedYear}`}
-          {step === "day" && format(selectedDate ?? today, "MMMM yyyy")}
-        </h2>
+      <div className="flex flex-col items-start gap-3 mb-6">
+        <div className="flex w-full items-start justify-between gap-3">
+          <h2 className="text-lg font-display font-bold text-white uppercase tracking-tight">
+            {step === "year" && "Select a Year"}
+            {step === "month" && `Year ${selectedYear}`}
+            {step === "day" && format(selectedDate ?? today, "MMMM yyyy")}
+          </h2>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         {/* Breadcrumb buttons */}
         <div className="flex gap-2">
@@ -55,15 +66,6 @@ function CalendarLume({ onMonthYearChange, onClose, defaultYear, defaultMonth, i
           >
             Month
           </Button>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="ml-2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          )}
         </div>
       </div>
 
@@ -77,7 +79,7 @@ function CalendarLume({ onMonthYearChange, onClose, defaultYear, defaultMonth, i
             className="h-80"
           >
             <ScrollArea className="h-full">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {yearRange.map((year) => (
                   <Button
                     key={year.getFullYear()}
@@ -113,7 +115,7 @@ function CalendarLume({ onMonthYearChange, onClose, defaultYear, defaultMonth, i
                 key={month.toISOString()}
                 variant={month.getMonth() === selectedMonth ? "default" : "outline"}
                 size="sm"
-                className="h-12 flex flex-col"
+                className="h-12 flex items-center justify-center"
                 onClick={() => {
                   setSelectedMonth(month.getMonth());
                   setSelectedDate(new Date(selectedYear, month.getMonth(), 1));
@@ -123,7 +125,6 @@ function CalendarLume({ onMonthYearChange, onClose, defaultYear, defaultMonth, i
                 }}
               >
                 <span className="text-sm font-medium">{format(month, "MMM")}</span>
-                <span className="text-xs text-muted-foreground">{selectedYear}</span>
               </Button>
             ))}
           </motion.div>
