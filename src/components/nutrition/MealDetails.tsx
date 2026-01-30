@@ -4,6 +4,40 @@ import { useState } from "react";
 import type { FoodItem } from "@/lib/api/nutrition";
 import type { Meal } from "@/components/nutrition/MealCalendar";
 
+/** Weight-based "100 g" + 1.5 → "150g"; else "1.5 piece", "1.5 slice", etc. */
+function formatServingLabel(numbersOfServing: number | undefined, servingType: string | undefined): string {
+  if (numbersOfServing == null) return servingType ?? "—";
+  const n = Number(numbersOfServing);
+  if (!servingType?.trim()) return "—";
+  const st = servingType.trim();
+  const weightMatch = st.match(/^(\d+(?:\.\d+)?)\s*g\s*$/i) || st.match(/^(\d+(?:\.\d+)?)\s*g$/i);
+  if (weightMatch) {
+    const gramsPerServing = parseFloat(weightMatch[1]);
+    const totalG = n * gramsPerServing;
+    return `${Math.round(totalG) === totalG ? totalG : totalG.toFixed(1)}g`;
+  }
+  return `${n} ${st}`;
+}
+
+/** Food item with either API totals (total_*) or per-serving values for display */
+type MealFoodItem = FoodItem | (FoodItem & {
+  total_calories?: number;
+  total_protein?: number;
+  total_carbs?: number;
+  total_fat?: number;
+  total_fiber?: number;
+  numbers_of_serving?: number;
+  total_sugars?: number;
+  total_zincs?: number;
+  total_magnesiums?: number;
+  total_calciums?: number;
+  total_irons?: number;
+  total_vitamin_a?: number;
+  total_vitamin_c?: number;
+  total_vitamin_b12?: number;
+  total_vitamin_d?: number;
+});
+
 interface MealDetailsProps {
   meal: Meal | null;
   onClose: () => void;
@@ -217,63 +251,83 @@ export default function MealDetails({
             </div>
           </div>
 
-          {/* Food Items from Meal Details */}
+          {/* Food Items from Meal Details (GET /meals/[id] foods with nutrition) */}
           {meal.foodItems && meal.foodItems.length > 0 && (
             <div className="bg-surface-card p-4 rounded-2xl border border-white/5">
               <h3 className="text-[10px] font-bold text-text-dim uppercase mb-4 tracking-wider">
-                Food Items
+                Foods in this meal
               </h3>
               <div className="space-y-4">
-                {meal.foodItems.map((food: FoodItem, idx: number) => {
-                  // Calculate nutrition based on amount_grams and serving_type
-                  const servingType = food.serving_type || "100g";
-                  // Extract grams per serving from serving_type (e.g., "100g" -> 100)
-                  let gramsPerServing = 100;
-                  if (servingType.endsWith("g") || servingType.endsWith("G")) {
-                    const match = servingType.match(/^(\d+(?:\.\d+)?)\s*g$/i);
-                    if (match) {
-                      gramsPerServing = parseFloat(match[1]);
-                    }
-                  } else {
-                    // For non-gram units, assume 1 serving = food.calories_per_serving
-                    gramsPerServing = 1;
-                  }
-                  
-                  // Calculate multiplier: amount_grams / grams_per_serving
-                  const multiplier = (food.amount_grams || gramsPerServing) / gramsPerServing;
-                  
-                  const caloriesTotal = (food.calories_per_serving || 0) * multiplier;
-                  const proteinTotal = (food.protein_per_serving || 0) * multiplier;
-                  const carbsTotal = (food.carbs_per_serving || 0) * multiplier;
-                  const fatsTotal = (food.fat_per_serving || 0) * multiplier;
-                  const fiberTotal = (food.fiber || 0) * multiplier;
+                {(meal.foodItems as MealFoodItem[]).map((food, idx) => {
+                  const hasTotals = "total_calories" in food && food.total_calories != null;
+                  const mult = (() => {
+                    if (hasTotals) return 1;
+                    const st = food.serving_type || "100g";
+                    let g = 100;
+                    const m = st.match(/^(\d+(?:\.\d+)?)\s*g$/i);
+                    if (m) g = parseFloat(m[1]);
+                    return (food.amount_grams ?? g) / g;
+                  })();
+                  const calories = hasTotals ? (food.total_calories ?? 0) : (food.calories_per_serving ?? 0) * mult;
+                  const protein = hasTotals ? (food.total_protein ?? 0) : (food.protein_per_serving ?? 0) * mult;
+                  const carbs = hasTotals ? (food.total_carbs ?? 0) : (food.carbs_per_serving ?? 0) * mult;
+                  const fats = hasTotals ? (food.total_fat ?? 0) : (food.fat_per_serving ?? 0) * mult;
+                  const fiber = hasTotals ? (food.total_fiber ?? 0) : (food.fiber ?? 0) * mult;
+                  const sugars = hasTotals ? (food.total_sugars ?? 0) : undefined;
+                  const zinc = hasTotals ? (food.total_zincs ?? 0) : undefined;
+                  const magnesium = hasTotals ? (food.total_magnesiums ?? 0) : undefined;
+                  const calcium = hasTotals ? (food.total_calciums ?? 0) : undefined;
+                  const iron = hasTotals ? (food.total_irons ?? 0) : undefined;
+                  const vitA = hasTotals ? (food.total_vitamin_a ?? 0) : undefined;
+                  const vitC = hasTotals ? (food.total_vitamin_c ?? 0) : undefined;
+                  const vitB12 = hasTotals ? (food.total_vitamin_b12 ?? 0) : undefined;
+                  const vitD = hasTotals ? (food.total_vitamin_d ?? 0) : undefined;
+
+                  const servingLabel = "numbers_of_serving" in food && food.serving_type
+                    ? formatServingLabel(food.numbers_of_serving, food.serving_type)
+                    : food.serving_type
+                      ? `${food.amount_grams ?? "—"}g (${food.serving_type})`
+                      : `${food.amount_grams ?? "—"}g`;
+
+                  const fmt = (v: number | undefined, unit = "g") =>
+                    v != null ? `${typeof v === "number" && v % 1 !== 0 ? v.toFixed(2) : Math.round(v)}${unit}` : "—";
+
+                  const nutritionRows: { label: string; value: string }[] = [
+                    { label: "Calories", value: fmt(calories, "") },
+                    { label: "Protein", value: fmt(protein) },
+                    { label: "Carbs", value: fmt(carbs) },
+                    { label: "Fats", value: fmt(fats) },
+                    { label: "Fiber", value: fmt(fiber) },
+                    { label: "Sugars", value: fmt(sugars) },
+                    { label: "Zinc", value: fmt(zinc) },
+                    { label: "Magnesium", value: fmt(magnesium) },
+                    { label: "Calcium", value: fmt(calcium) },
+                    { label: "Iron", value: fmt(iron) },
+                    { label: "Vitamin A", value: fmt(vitA) },
+                    { label: "Vitamin C", value: fmt(vitC) },
+                    { label: "Vitamin B12", value: fmt(vitB12) },
+                    { label: "Vitamin D", value: fmt(vitD) },
+                  ];
 
                   return (
-                    <div key={idx} className="pb-4 border-b border-white/5 last:border-0 last:pb-0">
+                    <div key={food.id ?? idx} className="pb-4 border-b border-white/5 last:border-0 last:pb-0">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h4 className="text-sm font-semibold text-white">{food.name}</h4>
                         <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-primary/20 text-primary shrink-0">
-                          {Math.round(food.amount_grams || gramsPerServing)}
-                          {servingType.match(/\d/) ? (servingType.replace(/^\d+\.?\d*\s*/, "")) : servingType}
+                          {servingLabel}
                         </span>
                       </div>
-                      <p className="text-[9px] text-text-dim mb-3">{servingType} per serving</p>
-                      <div className="grid grid-cols-4 gap-2 text-[9px]">
-                        <div>
-                          <p className="text-text-dim font-bold uppercase mb-1">P</p>
-                          <p className="font-bold text-macro-protein">{Math.round(proteinTotal)}g</p>
-                        </div>
-                        <div>
-                          <p className="text-text-dim font-bold uppercase mb-1">C</p>
-                          <p className="font-bold text-macro-carbs">{Math.round(carbsTotal)}g</p>
-                        </div>
-                        <div>
-                          <p className="text-text-dim font-bold uppercase mb-1">F</p>
-                          <p className="font-bold text-macro-fats">{Math.round(fatsTotal)}g</p>
-                        </div>
-                        <div>
-                          <p className="text-text-dim font-bold uppercase mb-1">Cal</p>
-                          <p className="font-bold text-orange-400">{Math.round(caloriesTotal)}</p>
+                      <div className="mt-3 pl-0 border-l-2 border-primary/30 bg-white/[0.02] rounded-r-xl py-3 px-4">
+                        <p className="text-[9px] font-black text-text-dim uppercase tracking-widest mb-3">
+                          Nutrition facts
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-2 text-[10px]">
+                          {nutritionRows.map(({ label, value }) => (
+                            <div key={label} className="flex justify-between gap-2 sm:block">
+                              <p className="text-text-dim font-bold uppercase mb-0.5">{label}</p>
+                              <p className="font-bold text-white">{value}</p>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>

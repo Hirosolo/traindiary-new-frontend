@@ -22,6 +22,7 @@ interface Meal {
   protein: number;
   carbs: number;
   fats: number;
+  fiber?: number;
   items?: FoodItem[];
 }
 
@@ -78,18 +79,22 @@ export default function DailyMealList({ meals, onMealClick }: DailyMealListProps
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 border-t border-white/5 pt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 border-t border-white/5 pt-4">
                   <div className="text-center">
-                    <p className="text-[8px] font-black text-text-dim uppercase mb-1">PRO</p>
-                    <p className="text-sm font-black text-white">{Math.round(meal.protein)}G</p>
+                    <p className="text-[8px] font-black text-text-dim uppercase mb-1">Protein</p>
+                    <p className="text-sm font-black text-white">{Math.round(meal.protein)}g</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[8px] font-black text-text-dim uppercase mb-1">CHO</p>
-                    <p className="text-sm font-black text-white">{Math.round(meal.carbs)}G</p>
+                    <p className="text-[8px] font-black text-text-dim uppercase mb-1">Carbs</p>
+                    <p className="text-sm font-black text-white">{Math.round(meal.carbs)}g</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[8px] font-black text-text-dim uppercase mb-1">FAT</p>
-                    <p className="text-sm font-black text-white">{Math.round(meal.fats)}G</p>
+                    <p className="text-[8px] font-black text-text-dim uppercase mb-1">Fats</p>
+                    <p className="text-sm font-black text-white">{Math.round(meal.fats)}g</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[8px] font-black text-text-dim uppercase mb-1">Fiber</p>
+                    <p className="text-sm font-black text-white">{Math.round(meal.fiber ?? 0)}g</p>
                   </div>
                 </div>
               </motion.div>

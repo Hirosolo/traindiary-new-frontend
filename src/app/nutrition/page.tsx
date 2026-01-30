@@ -21,6 +21,43 @@ import {
 import { fetchSummary } from "@/lib/api/workouts"; // Summary includes nutrition
 import { motion, AnimatePresence } from "framer-motion";
 
+/** Format serving: weight-based "100 g" + 1.5 → "150g"; else "1.5 piece", "1.5 slice", etc. */
+function formatServingLabel(numbersOfServing: number | undefined, servingType: string | undefined): string {
+  if (numbersOfServing == null) return servingType ?? "—";
+  const n = Number(numbersOfServing);
+  if (!servingType?.trim()) return "—";
+  const st = servingType.trim();
+  const weightMatch = st.match(/^(\d+(?:\.\d+)?)\s*g\s*$/i) || st.match(/^(\d+(?:\.\d+)?)\s*g$/i);
+  if (weightMatch) {
+    const gramsPerServing = parseFloat(weightMatch[1]);
+    const totalG = n * gramsPerServing;
+    return `${Math.round(totalG) === totalG ? totalG : totalG.toFixed(1)}g`;
+  }
+  return `${n} ${st}`;
+}
+
+const NUTRITION_LABELS: { key: string; label: string }[] = [
+  { key: "total_calories", label: "Calories" },
+  { key: "total_protein", label: "Protein" },
+  { key: "total_carbs", label: "Carbs" },
+  { key: "total_fat", label: "Fats" },
+  { key: "total_fiber", label: "Fiber" },
+  { key: "total_sugars", label: "Sugars" },
+  { key: "total_zincs", label: "Zinc" },
+  { key: "total_magnesiums", label: "Magnesium" },
+  { key: "total_calciums", label: "Calcium" },
+  { key: "total_irons", label: "Iron" },
+  { key: "total_vitamin_a", label: "Vitamin A" },
+  { key: "total_vitamin_c", label: "Vitamin C" },
+  { key: "total_vitamin_b12", label: "Vitamin B12" },
+  { key: "total_vitamin_d", label: "Vitamin D" },
+];
+
+function fmtNutrient(v: number | undefined, unit = "g"): string {
+  if (v == null || !Number.isFinite(v)) return "—";
+  return v % 1 !== 0 ? `${v.toFixed(2)}${unit}` : `${Math.round(v)}${unit}`;
+}
+
 export default function NutritionPage() {
   const { user } = useAuth();
   const userId = user?.user_id ?? user?.id ?? 1;
@@ -75,35 +112,31 @@ export default function NutritionPage() {
       const mealsArray = Array.isArray(response) ? response : (response as any).data || [];
       
       const detailedMeals = mealsArray.map((m: any) => {
-          // New backend might include details directly
-          const totals = m.details?.reduce((acc: any, d: any) => {
-              const f = d.food;
-              const mult = d.amount_grams;
-              return {
-                  calories: acc.calories + (f.calories_per_serving * mult),
-                  protein: acc.protein + (f.protein_per_serving * mult),
-                  carbs: acc.carbs + (f.carbs_per_serving * mult),
-                  fats: acc.fats + (f.fat_per_serving * mult),
-                  fiber: acc.fiber + (f.fibers_per_serving * mult),
-              }
-          }, { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 }) || { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 };
+          // API returns total_* per meal (GET /meals)
+          const hasTotals = m.total_calories != null || m.total_protein != null;
+          const calories = hasTotals ? (m.total_calories ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.calories_per_serving ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
+          const protein = hasTotals ? (m.total_protein ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.protein_per_serving ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
+          const carbs = hasTotals ? (m.total_carbs ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.carbs_per_serving ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
+          const fats = hasTotals ? (m.total_fat ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.fat_per_serving ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
+          const fiber = hasTotals ? (m.total_fibers ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.fiber ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
 
+          const name = m.name || (m.meal_type ? String(m.meal_type).charAt(0).toUpperCase() + String(m.meal_type).slice(1) : "Meal");
           return {
               id: String(m.meal_id),
               meal_id: m.meal_id,
-              name: m.name || m.meal_type || "Meal",
+              name,
               mealType: m.meal_type || "Other",
               time: m.meal_time || "12:00",
-              calories: totals.calories ?? 0,
-              protein: totals.protein ?? 0,
-              carbs: totals.carbs ?? 0,
-              fats: totals.fats ?? 0,
-              fiber: totals.fiber ?? 0,
+              calories,
+              protein,
+              carbs,
+              fats,
+              fiber,
               foodItems: m.details?.map((d: any) => ({
                  id: String(d.meal_detail_id),
                  name: d.food?.name,
-                 amount: `${d.amount_grams} servings`,
-                 calories: d.food?.calories_per_serving * d.amount_grams
+                 amount: `${d.amount_grams ?? d.numbers_of_serving ?? 1} servings`,
+                 calories: (d.food?.calories_per_serving ?? 0) * (d.amount_grams ?? d.numbers_of_serving ?? 1)
               }))
           };
       });
@@ -136,20 +169,51 @@ export default function NutritionPage() {
   const handleMealClick = async (meal: any) => {
       setIsLoading(true);
       try {
-          const items = await fetchMealFoodItems(meal.meal_id);
-          const detailed = { 
-              ...meal, 
-              foodItems: items.map((i: any) => ({
-                id: String(i.meal_detail_id),
-                name: i.foods?.name || "Food",
-                calories: i.calories_per_serving, // verify field names
-                protein: i.protein_per_serving,
-                carbs: i.carbs_per_serving,
-                fats: i.fat_per_serving,
-                amount: `${i.amount_grams}g`
-              }))
-          };
-          setSelectedMeal(detailed);
+          const data = await fetchMealDetails(meal.meal_id);
+          if (data?.foods?.length) {
+              // Map GET /meals/[id] data.foods[] into food items (all nutrition from API)
+              const foodItems = data.foods.map((f) => ({
+                  id: String(f.meal_detail_id),
+                  meal_detail_id: f.meal_detail_id,
+                  food_id: f.food_id,
+                  name: f.food_name,
+                  serving_type: f.serving_type,
+                  image: f.image,
+                  numbers_of_serving: f.numbers_of_serving,
+                  total_calories: f.total_calories,
+                  total_protein: f.total_protein,
+                  total_carbs: f.total_carbs,
+                  total_fat: f.total_fat,
+                  total_fiber: f.total_fibers,
+                  total_sugars: f.total_sugars,
+                  total_zincs: f.total_zincs,
+                  total_magnesiums: f.total_magnesiums,
+                  total_calciums: f.total_calciums,
+                  total_irons: f.total_irons,
+                  total_vitamin_a: f.total_vitamin_a,
+                  total_vitamin_c: f.total_vitamin_c,
+                  total_vitamin_b12: f.total_vitamin_b12,
+                  total_vitamin_d: f.total_vitamin_d,
+              }));
+              setSelectedMeal({ ...meal, foodItems });
+          } else {
+              const items = await fetchMealFoodItems(meal.meal_id);
+              const detailed = {
+                  ...meal,
+                  foodItems: items.map((i: any) => ({
+                      id: String(i.meal_detail_id),
+                      name: i.name || "Food",
+                      serving_type: i.serving_type,
+                      amount_grams: i.amount_grams,
+                      calories_per_serving: i.calories_per_serving,
+                      protein_per_serving: i.protein_per_serving,
+                      carbs_per_serving: i.carbs_per_serving,
+                      fat_per_serving: i.fat_per_serving,
+                      fiber: i.fiber,
+                  })),
+              };
+              setSelectedMeal(detailed);
+          }
       } catch (e) {
           setSelectedMeal(meal);
       } finally {
@@ -164,7 +228,10 @@ export default function NutritionPage() {
               mealDate: newMeal.date,
               mealTime: newMeal.time,
               mealType: newMeal.mealType,
-              items: newMeal.items.map(i => ({ food_id: i.food_id, amount_grams: (i.quantity ?? 1) * (i.grams_per_serving ?? 100) }))
+              items: newMeal.items.map((i) => ({
+                  food_id: i.food_id,
+                  quantity: i.quantity ?? 1,
+              })),
           });
           loadDailyData();
       } catch (e) {
@@ -254,26 +321,84 @@ export default function NutritionPage() {
                     </div>
                     
                     <div className="p-8 space-y-6">
-                        <div className="grid grid-cols-4 gap-4 pb-6 border-b border-white/5">
-                            <div className="text-center"><p className="text-2xl font-display font-bold text-white">{Math.round(selectedMeal.calories)}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">KCAL</p></div>
-                            <div className="text-center"><p className="text-2xl font-display font-bold text-blue-500">{Math.round(selectedMeal.protein)}G</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">PRO</p></div>
-                            <div className="text-center"><p className="text-2xl font-display font-bold text-red-500">{Math.round(selectedMeal.carbs)}G</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">CHO</p></div>
-                            <div className="text-center"><p className="text-2xl font-display font-bold text-emerald-500">{Math.round(selectedMeal.fats)}G</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">FAT</p></div>
-                        </div>
+                        {(() => {
+                            const items = selectedMeal.foodItems ?? [];
+                            const hasApiTotals = items.some((i: any) => i.total_calories != null);
+                            const mealTotals = hasApiTotals
+                                ? items.reduce(
+                                    (acc: any, i: any) => ({
+                                        calories: (acc.calories ?? 0) + (i.total_calories ?? 0),
+                                        protein: (acc.protein ?? 0) + (i.total_protein ?? 0),
+                                        carbs: (acc.carbs ?? 0) + (i.total_carbs ?? 0),
+                                        fat: (acc.fat ?? 0) + (i.total_fat ?? 0),
+                                        fiber: (acc.fiber ?? 0) + (i.total_fiber ?? 0),
+                                        sugars: (acc.sugars ?? 0) + (i.total_sugars ?? 0),
+                                        zincs: (acc.zincs ?? 0) + (i.total_zincs ?? 0),
+                                        magnesiums: (acc.magnesiums ?? 0) + (i.total_magnesiums ?? 0),
+                                        calciums: (acc.calciums ?? 0) + (i.total_calciums ?? 0),
+                                        irons: (acc.irons ?? 0) + (i.total_irons ?? 0),
+                                        vitamin_a: (acc.vitamin_a ?? 0) + (i.total_vitamin_a ?? 0),
+                                        vitamin_c: (acc.vitamin_c ?? 0) + (i.total_vitamin_c ?? 0),
+                                        vitamin_b12: (acc.vitamin_b12 ?? 0) + (i.total_vitamin_b12 ?? 0),
+                                        vitamin_d: (acc.vitamin_d ?? 0) + (i.total_vitamin_d ?? 0),
+                                    }),
+                                    {}
+                                )
+                                : null;
+                            const cal = mealTotals?.calories ?? selectedMeal.calories;
+                            const pro = mealTotals?.protein ?? selectedMeal.protein;
+                            const carb = mealTotals?.carbs ?? selectedMeal.carbs;
+                            const fat = mealTotals?.fat ?? selectedMeal.fats;
+                            return (
+                                <>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pb-6 border-b border-white/5">
+                                        <div className="text-center"><p className="text-xl font-display font-bold text-white">{Number.isFinite(cal) ? Math.round(cal) : 0}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">KCAL</p></div>
+                                        <div className="text-center"><p className="text-xl font-display font-bold text-blue-500">{Number.isFinite(pro) ? Math.round(pro) : 0}g</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">PRO</p></div>
+                                        <div className="text-center"><p className="text-xl font-display font-bold text-red-500">{Number.isFinite(carb) ? Math.round(carb) : 0}g</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">CHO</p></div>
+                                        <div className="text-center"><p className="text-xl font-display font-bold text-emerald-500">{Number.isFinite(fat) ? Math.round(fat) : 0}g</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">FAT</p></div>
+                                        {mealTotals && (
+                                            <>
+                                                <div className="text-center"><p className="text-xl font-display font-bold text-white">{fmtNutrient(mealTotals.fiber)}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">FIBER</p></div>
+                                                <div className="text-center"><p className="text-xl font-display font-bold text-white">{fmtNutrient(mealTotals.sugars)}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">SUGARS</p></div>
+                                                <div className="text-center"><p className="text-lg font-display font-bold text-white">{fmtNutrient(mealTotals.zincs)}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">ZINC</p></div>
+                                                <div className="text-center"><p className="text-lg font-display font-bold text-white">{fmtNutrient(mealTotals.magnesiums)}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">MAG</p></div>
+                                                <div className="text-center"><p className="text-lg font-display font-bold text-white">{fmtNutrient(mealTotals.calciums)}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">CALCIUM</p></div>
+                                                <div className="text-center"><p className="text-lg font-display font-bold text-white">{fmtNutrient(mealTotals.irons)}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">IRON</p></div>
+                                                <div className="text-center"><p className="text-lg font-display font-bold text-white">{fmtNutrient(mealTotals.vitamin_a, "")}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">VIT A</p></div>
+                                                <div className="text-center"><p className="text-lg font-display font-bold text-white">{fmtNutrient(mealTotals.vitamin_c, "")}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">VIT C</p></div>
+                                                <div className="text-center"><p className="text-lg font-display font-bold text-white">{fmtNutrient(mealTotals.vitamin_b12, "")}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">B12</p></div>
+                                                <div className="text-center"><p className="text-lg font-display font-bold text-white">{fmtNutrient(mealTotals.vitamin_d, "")}</p><p className="text-[8px] font-black text-text-dim uppercase mt-1">VIT D</p></div>
+                                            </>
+                                        )}
+                                    </div>
 
-                        <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 no-scrollbar">
-                            {selectedMeal.foodItems?.map((i: any) => (
-                                <div key={i.id} className="bg-white/5 p-5 rounded-2xl flex justify-between items-center">
-                                    <div>
-                                        <p className="font-bold text-white uppercase italic tracking-tight">{i.name}</p>
-                                        <p className="text-[10px] text-text-dim uppercase mt-1">{i.amount}</p>
+                                    <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 no-scrollbar">
+                                        {items.map((i: any) => {
+                                            const servingLabel = formatServingLabel(i.numbers_of_serving, i.serving_type) || i.amount || "—";
+                                            return (
+                                                <div key={i.id} className="bg-white/5 p-5 rounded-2xl border border-white/5">
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div>
+                                                            <p className="font-bold text-white uppercase italic tracking-tight">{i.name}</p>
+                                                            <p className="text-[10px] text-text-dim uppercase mt-1">{servingLabel}</p>
+                                                        </div>
+                                                        <p className="text-xs font-black text-primary">{Number.isFinite(i.total_calories ?? i.calories) ? Math.round(i.total_calories ?? i.calories ?? 0) : 0} KCAL</p>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-2 text-[10px] border-t border-white/5 pt-3">
+                                                        {NUTRITION_LABELS.filter(({ key }) => key !== "total_calories").map(({ key, label }) => (
+                                                            <div key={key} className="flex justify-between gap-2">
+                                                                <span className="text-text-dim font-bold uppercase">{label}</span>
+                                                                <span className="font-bold text-white">{fmtNutrient(i[key], key.includes("vitamin") || key.includes("zincs") || key.includes("magnesiums") || key.includes("calciums") || key.includes("irons") ? "" : "g")}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-xs font-black text-primary">{Math.round(i.calories)} KCAL</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                </>
+                            );
+                        })()}
                     </div>
 
                     <div className="p-8 pt-0 flex gap-4">

@@ -95,6 +95,13 @@ export interface ApiMeal {
   fats?: number;
   fiber?: number;
   calories?: number;
+  /** GET /meals response: totals per meal */
+  total_calories?: number;
+  total_protein?: number;
+  total_carbs?: number;
+  total_fat?: number;
+  total_fibers?: number;
+  total_sugars?: number;
   items?: ApiMealItem[];
   user_meal_details?: Array<{
     meal_detail_id?: number;
@@ -131,7 +138,11 @@ export async function fetchMeals(
   const params = new URLSearchParams();
   if (date) params.append("date", date);
   if (month) params.append("month", month);
-  return apiFetch<ApiMealsResponse>(`/meals?${params.toString()}`);
+  const url = `/meals?${params.toString()}`;
+  console.log("[fetchMeals] request", { userId, date, month, url });
+  const data = await apiFetch<ApiMealsResponse>(url);
+  console.log("[fetchMeals] response", data);
+  return data;
 }
 
 export interface NutritionGoal {
@@ -160,9 +171,44 @@ export async function saveNutritionGoal(goal: NutritionGoal): Promise<void> {
 }
 
 
-export async function fetchMealDetails(mealId: string | number): Promise<any | null> {
+/** Single food in GET /meals/[id] response (data.foods[]) */
+export interface MealDetailFood {
+  meal_detail_id: number;
+  food_id: number;
+  food_name: string;
+  serving_type: string;
+  image: string | null;
+  numbers_of_serving: number;
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fat: number;
+  total_fibers: number;
+  total_sugars?: number;
+  total_zincs?: number;
+  total_magnesiums?: number;
+  total_calciums?: number;
+  total_irons?: number;
+  total_vitamin_a?: number;
+  total_vitamin_c?: number;
+  total_vitamin_b12?: number;
+  total_vitamin_d?: number;
+}
+
+/** GET /meals/[id] response (result.data) */
+export interface MealDetailResponse {
+  meal_id: number;
+  meal_type: string;
+  log_date: string;
+  foods: MealDetailFood[];
+}
+
+export async function fetchMealDetails(mealId: string | number): Promise<MealDetailResponse | null> {
   try {
-    return await apiFetch<any>(`/meals/${mealId}`);
+    console.log("[fetchMealDetails] request", { mealId, url: `/meals/${mealId}` });
+    const data = await apiFetch<MealDetailResponse>(`/meals/${mealId}`);
+    console.log("[fetchMealDetails] response", data);
+    return data;
   } catch (error) {
     console.error("Failed to fetch meal details", error);
     return null;
@@ -251,21 +297,19 @@ export async function createMeal(payload: {
   }>;
   notes?: string | null;
 }) {
-  const details = (payload.items || []).map((item) => {
-    const quantity = item.quantity ?? 1;
-    const gramsPerServing = item.grams_per_serving ?? 100;
-    return {
-      food_id: Number(item.food_id ?? item.id),
-      amount_grams: quantity * gramsPerServing,
-    };
-  });
+  const details = (payload.items || []).map((item) => ({
+    food_id: Number(item.food_id ?? item.id),
+    numbers_of_serving: Number(item.quantity ?? 1),
+  }));
+
+  const mealTypeLower = payload.mealType.toLowerCase();
 
   return apiFetch<{ meal_id?: number; id?: number }>(`/meals`, {
     method: "POST",
     body: JSON.stringify({
-      meal_type: payload.mealType,
+      meal_type: mealTypeLower,
       log_date: payload.mealDate,
-      details: details,
+      details,
     }),
   });
 }
