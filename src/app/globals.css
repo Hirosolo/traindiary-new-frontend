@@ -12,6 +12,13 @@
   --font-family-body: "Inter", sans-serif;
   --tracking-ultra-wide: 0.25em;
   --tracking-architectural: 0.15em;
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--color-green-500);
+  --color-success-foreground: var(--color-white);
+  --color-info: var(--color-violet-600);
+  --color-info-foreground: var(--color-white);
+  --color-warning: var(--color-yellow-500);
+  --color-warning-foreground: var(--color-white);
 }
 
 /* Aurora background color variables */
@@ -19,12 +26,23 @@
   --white: #fff;
   --black: #000;
   --transparent: transparent;
-  
+
   --blue-300: #93c5fd;
   --blue-400: #60a5fa;
   --blue-500: #3b82f6;
   --indigo-300: #a5b4fc;
   --violet-200: #ddd6fe;
+
+  --color-green-500: #22c55e;
+  --color-violet-600: #7c3aed;
+  --color-yellow-500: #eab308;
+  --color-white: #ffffff;
+
+  --destructive-foreground: oklch(1 0 0);
+}
+
+.dark {
+  --destructive-foreground: oklch(1 0 0);
 }
 
 body {
@@ -60,18 +78,18 @@ body {
 
 /* Hero gradient */
 .hero-gradient {
-  background: linear-gradient(180deg, rgba(5,5,5,0.7) 0%, #050505 85%, #050505 100%);
+  background: linear-gradient(180deg, rgba(5, 5, 5, 0.7) 0%, #050505 85%, #050505 100%);
 }
 
 @media (min-width: 1024px) {
   .hero-gradient {
-    background: linear-gradient(90deg, #050505 0%, #050505 40%, rgba(5,5,5,0.4) 100%);
+    background: linear-gradient(90deg, #050505 0%, #050505 40%, rgba(5, 5, 5, 0.4) 100%);
   }
 }
 
 /* Program card gradient */
 .program-card-gradient {
-  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.1) 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.4) 60%, rgba(0, 0, 0, 0.1) 100%);
 }
 
 /* Glass panel effect */
@@ -84,7 +102,7 @@ body {
 
 /* Text outline effect */
 .text-outline {
-  -webkit-text-stroke: 1px rgba(255,255,255,0.2);
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
   color: transparent;
 }
 

@@ -1,4 +1,4 @@
-const API_BASE = (process.env.NEXT_PUBLIC_API_HOST ?? "http://localhost:3001/api").replace(/\/$/, "");
+const API_BASE = (process.env.NEXT_PUBLIC_API_HOST || "").replace(/\/$/, "");
 const API_PREFIX = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function getAuthToken(): string | null {
@@ -19,25 +19,18 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
 
-  if (!response.ok) {
-    let message = `Request failed with ${response.status}`;
-    try {
-      const body = await response.json();
-      if (body?.message) message = body.message;
-    } catch {
-      // ignore
-    }
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    let message = result.message || result.errors?.[0]?.message || `Request failed with ${response.status}`;
     throw new Error(message);
   }
 
-  try {
-    return (await response.json()) as T;
-  } catch {
-    return {} as T;
-  }
+  return result.data as T;
 }
 
 export interface ApiUser {
+  id: number;
   user_id: number;
   username: string;
   email: string;

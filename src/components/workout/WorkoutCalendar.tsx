@@ -1,15 +1,15 @@
-"use client";
-
-import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import React, { useState } from 'react';
+import { CalendarLume } from "@/components/ui/calendar-lume";
 
 export interface WorkoutSession {
   id: string;
   title: string;
-  status: "complete" | "incomplete";
+  type?: string;
+  status: string; 
   note?: string;
   time?: string;
   exercises?: string[];
+  gr_score?: number;
 }
 
 export interface DayData {
@@ -28,6 +28,8 @@ interface WorkoutCalendarProps {
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onSessionClick: (session: WorkoutSession, day: number) => void;
+  onDateSelect?: (date: Date) => void;
+  onMonthYearChange?: (year: number, month: number) => void;
 }
 
 export default function WorkoutCalendar({
@@ -38,54 +40,142 @@ export default function WorkoutCalendar({
   onPrevMonth,
   onNextMonth,
   onSessionClick,
+  onDateSelect,
+  onMonthYearChange,
 }: WorkoutCalendarProps) {
-  const [expandedDay, setExpandedDay] = useState<number | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarStep, setCalendarStep] = useState<"year" | "month">("year");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthIndex = monthNames.indexOf(month);
 
-  const handleDayClick = (day: number, hasSessions: boolean) => {
-    if (!hasSessions) return;
-    setExpandedDay(day);
+  const handleDayClick = (dayData: DayData) => {
+    if (onDateSelect && dayData.isCurrentMonth) {
+       const monthIndex = monthNames.findIndex(m => m.toUpperCase() === month.toUpperCase()) || 0;
+       onDateSelect(new Date(year, monthIndex, dayData.day));
+    }
+    
+    // Direct open if session exists
+    if (dayData.sessions.length > 0) {
+        onSessionClick(dayData.sessions[0], dayData.day);
+    }
   };
 
-  const expandedDayData = useMemo(
-    () => days.find((d) => d.isCurrentMonth && d.day === expandedDay),
-    [days, expandedDay]
-  );
+  const getStatusColor = (status: string) => {
+      const s = status?.toUpperCase() || 'PENDING';
+      switch (s) {
+          case 'COMPLETED': return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]';
+          case 'IN_PROGRESS': return 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.4)]';
+          case 'MISSED': return 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]';
+          case 'UNFINISHED': return 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]';
+          default: return 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]';
+      }
+  };
+
+  // Icons matching LogWorkoutModal exactly
+  const WORKOUT_TYPE_ICONS: Record<string, string> = {
+    "push": "fitness_center",
+    "pull": "rowing",
+    "legs": "foot_bones",
+    "full body": "accessibility_new",
+    "cardio": "directions_run",
+    "upper": "vertical_align_top",
+    "lower": "vertical_align_bottom",
+    "upper body": "vertical_align_top",
+    "lower body": "vertical_align_bottom",
+  };
+
+  const getCategoryIcon = (type?: string, title?: string) => {
+      const t = (type || title || '').toLowerCase().trim();
+      
+      // 1. Direct lookup (most accurate)
+      if (WORKOUT_TYPE_ICONS[t]) {
+          return WORKOUT_TYPE_ICONS[t];
+      }
+
+      // 2. Fuzzy matching for variations
+      if (t.includes('push')) return WORKOUT_TYPE_ICONS['push'];
+      if (t.includes('pull')) return WORKOUT_TYPE_ICONS['pull'];
+      if (t.includes('leg')) return WORKOUT_TYPE_ICONS['legs'];
+      if (t.includes('cardio')) return WORKOUT_TYPE_ICONS['cardio'];
+      if (t.includes('full') && t.includes('body')) return WORKOUT_TYPE_ICONS['full body'];
+      if (t.includes('upper')) return WORKOUT_TYPE_ICONS['upper'];
+      if (t.includes('lower')) return WORKOUT_TYPE_ICONS['lower'];
+      
+      // 3. Specific Fallbacks
+      if (t.includes('back')) return 'accessibility_new';
+      if (t.includes('chest')) return 'fitness_center';
+      if (t.includes('arm')) return 'fitness_center';
+      
+      // 4. Default generic
+      return 'fitness_center';
+  };
 
   return (
-    <>
     <main className="flex-1 bg-background-dark overflow-y-auto p-4 lg:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 lg:mb-8 gap-4">
-          <div>
-            <h2 className="text-2xl lg:text-3xl font-display font-bold">
-              {month} {year}
-            </h2>
-            <p className="text-text-dim text-sm lg:text-base">
-              You've hit {sessionsCount} sessions this month. Keep pushing.
-            </p>
+          <div className="relative">
+            <button 
+              onClick={() => {
+                setCalendarStep("year");
+                setIsCalendarOpen(true);
+              }}
+              className="group flex flex-col items-start transition-all hover:opacity-80"
+            >
+              <span className="text-[10px] uppercase tracking-[0.2em] text-text-dim font-bold block mb-1 group-hover:text-primary transition-colors">
+                Select Period
+              </span>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl lg:text-3xl font-display font-bold uppercase italic tracking-tighter text-white leading-none">
+                  {month} {year}
+                </h2>
+                <span className="material-symbols-outlined text-text-dim group-hover:text-white transition-colors text-xl">
+                  calendar_month
+                </span>
+              </div>
+              <p className="text-text-dim text-[11px] font-bold uppercase tracking-widest mt-2">
+                {sessionsCount} SESSIONS LOGGED • <span className="text-primary">CONSISTENCY MODE</span>
+              </p>
+            </button>
+
+            {/* Calendar Modal */}
+            {isCalendarOpen && onMonthYearChange && (
+              <div className="absolute top-full left-0 mt-3 z-50 animate-in fade-in zoom-in-95 duration-200">
+                <CalendarLume
+                  defaultMonth={monthIndex >= 0 ? monthIndex : 0}
+                  defaultYear={year}
+                  onMonthYearChange={(y, m) => {
+                    onMonthYearChange(y, m);
+                    setIsCalendarOpen(false);
+                  }}
+                  initialStep={calendarStep}
+                  onClose={() => setIsCalendarOpen(false)}
+                />
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <button
               onClick={onPrevMonth}
-              className="p-2 rounded-lg bg-surface-card border border-white/5 hover:bg-surface-highlight"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card border border-white/5 hover:border-white/20 transition-colors"
             >
-              <span className="material-symbols-outlined">chevron_left</span>
+              <span className="material-symbols-outlined text-xl">chevron_left</span>
             </button>
             <button
               onClick={onNextMonth}
-              className="p-2 rounded-lg bg-surface-card border border-white/5 hover:bg-surface-highlight"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card border border-white/5 hover:border-white/20 transition-colors"
             >
-              <span className="material-symbols-outlined">chevron_right</span>
+              <span className="material-symbols-outlined text-xl">chevron_right</span>
             </button>
           </div>
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-px bg-white/5 border border-white/5 rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-7 gap-px bg-white/5 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
           {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
             <div
               key={d}
-              className="bg-surface-dark py-2 lg:py-3 text-center text-[9px] lg:text-[10px] font-bold text-text-dim uppercase tracking-widest border-b border-white/5"
+              className="bg-surface-dark py-4 text-center text-[9px] font-black text-text-dim uppercase tracking-widest border-b border-white/5"
             >
               {d}
             </div>
@@ -94,61 +184,54 @@ export default function WorkoutCalendar({
           {/* Days */}
           {days.map((dayData, index) => {
             const hasSessions = dayData.sessions.length > 0;
-            const isExpanded = expandedDay === dayData.day;
-            const completedSessions = dayData.sessions.filter(
-              (s) => s.status === "complete"
-            ).length;
-
+            const session = hasSessions ? dayData.sessions[0] : null;
+            
             return (
               <div
                 key={index}
-                className={`bg-background-dark p-2 lg:p-3 relative group transition-colors h-[120px] lg:h-[144px] overflow-visible ${
-                  hasSessions ? "cursor-pointer hover:bg-surface-dark" : ""
-                } ${dayData.isToday ? "ring-2 ring-primary ring-inset" : ""}`}
-                onClick={() => handleDayClick(dayData.day, hasSessions)}
+                className={`bg-background-dark p-3 relative group transition-all duration-300 h-[100px] lg:h-[130px] overflow-visible border-r border-b border-white/5 ${
+                  hasSessions ? "cursor-pointer hover:bg-surface-dark/50" : "cursor-pointer hover:bg-white/5"
+                } ${dayData.isToday ? "bg-primary/5" : ""}`}
+                onClick={() => handleDayClick(dayData)}
               >
-                <span
-                  className={`text-xs lg:text-sm font-medium ${
-                    !dayData.isCurrentMonth
-                      ? "text-white/20"
-                      : dayData.isToday
-                      ? "text-primary"
-                      : hasSessions
-                      ? "text-white"
-                      : "text-text-dim"
-                  }`}
-                >
-                  {dayData.day}
-                </span>
-
-                {/* Session indicators when collapsed */}
-                {hasSessions && (
-                  <div
-                    className="mt-2 lg:mt-3 grid grid-rows-3 gap-1.5"
-                    style={{ height: "calc(100% - 28px)" }}
+                <div className="flex justify-between items-start mb-2">
+                  <span
+                    className={`text-xs font-bold ${
+                      !dayData.isCurrentMonth
+                        ? "text-white/10"
+                        : dayData.isToday
+                        ? "text-primary scale-125"
+                        : hasSessions
+                        ? "text-white"
+                        : "text-text-dim"
+                    }`}
                   >
-                    {dayData.sessions.slice(0, 3).map((session) => (
-                      <div
-                        key={session.id}
-                        className="relative rounded-md overflow-hidden border border-white/5 bg-white/5 h-full"
-                      >
-                        <div
-                          className={`absolute inset-0 transition-all duration-300 ease-out origin-left ${
-                            session.status === "complete" ? "bg-primary" : "bg-primary/30"
-                          }`}
-                          style={{ opacity: 0.85, transform: isExpanded ? "scaleX(1)" : "scaleX(0.98)" }}
-                        />
-                        <div className="relative flex items-center justify-between px-2 text-[8px] lg:text-[9px] font-semibold text-white/80 h-full">
-                          <span className="truncate">{session.title}</span>
-                          {session.time && <span className="text-[7px] lg:text-[8px] text-white/60">{session.time}</span>}
+                    {dayData.day}
+                  </span>
+                  {dayData.isToday && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  )}
+                </div>
+
+                {/* SESSION CONTENT */}
+                {session && (
+                  <div className="absolute inset-x-3 top-8 bottom-3 flex flex-col items-center justify-between">
+                        {/* LARGE CENTERED ICON */}
+                        <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center bg-white/5 border border-white/10 transition-transform group-hover:scale-110 ${session.status === 'COMPLETED' ? 'text-emerald-500 border-emerald-500/30' : 'text-text-dim'}`}>
+                             <span className="material-symbols-outlined text-xl lg:text-2xl">
+                                {getCategoryIcon(session.type, session.title)}
+                             </span>
                         </div>
-                      </div>
-                    ))}
-                    {dayData.sessions.length > 3 && (
-                      <div className="text-[9px] lg:text-[10px] text-text-dim font-bold px-0.5">
-                        +{dayData.sessions.length - 3} more hidden
-                      </div>
-                    )}
+
+                        {/* BOTTOM INFO */}
+                        <div className="w-full flex flex-col gap-1.5">
+                            <div 
+                              className={`h-1 rounded-full w-full ${getStatusColor(session.status)} transition-all duration-500`}
+                            />
+                            <p className="text-[8px] font-black text-white/40 uppercase truncate text-center tracking-widest">
+                                {session.title}
+                            </p>
+                        </div>
                   </div>
                 )}
               </div>
@@ -157,95 +240,5 @@ export default function WorkoutCalendar({
         </div>
       </div>
     </main>
-    <AnimatePresence>
-      {expandedDayData && (
-        <motion.div
-          className="fixed inset-0 z-40 flex items-center justify-center px-4 sm:px-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="absolute inset-0 bg-black/70"
-            onClick={() => setExpandedDay(null)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          />
-          <motion.div
-            className="relative w-full max-w-xl lg:max-w-3xl bg-surface-card border border-white/10 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden flex flex-col"
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 240, damping: 22 }}
-          >
-            <div className="flex items-start justify-between gap-3 p-4 lg:p-5 border-b border-white/10">
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-text-dim font-bold">
-                  {month} {expandedDayData.day}, {year}
-                </p>
-                <p className="text-lg lg:text-xl font-display font-bold text-white">
-                  {expandedDayData.sessions.length} workout{expandedDayData.sessions.length > 1 ? "s" : ""}
-                </p>
-              </div>
-              <button
-                onClick={() => setExpandedDay(null)}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="px-4 lg:px-5 py-3 lg:py-4 space-y-3 max-h-[70vh] overflow-y-auto">
-              {expandedDayData.sessions.map((session, idx) => (
-                <motion.div
-                  key={session.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05, type: "spring", stiffness: 240, damping: 20 }}
-                  className="bg-surface-dark/80 rounded-xl border border-white/5 p-3 lg:p-4 shadow-md shadow-black/20 flex flex-col gap-2"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm lg:text-base font-semibold text-white truncate">{session.title}</p>
-                      {session.time && (
-                        <p className="text-[11px] lg:text-xs text-text-dim uppercase font-bold">{session.time}</p>
-                      )}
-                      {session.exercises && session.exercises.length > 0 && (
-                        <p className="text-xs lg:text-sm text-text-dim mt-1 line-clamp-2">
-                          {session.exercises.slice(0, 4).join(" • ")}
-                          {session.exercises.length > 4 ? ` +${session.exercises.length - 4}` : ""}
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={`shrink-0 text-[11px] lg:text-xs font-bold px-2 py-1 rounded-md ${
-                        session.status === "complete" ? "bg-primary/20 text-primary" : "bg-white/10 text-text-dim"
-                      }`}
-                    >
-                      {session.status === "complete" ? "Done" : "Pending"}
-                    </span>
-                  </div>
-                  {session.note && (
-                    <p className="text-xs lg:text-sm text-text-dim leading-relaxed">{session.note}</p>
-                  )}
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() => {
-                        onSessionClick(session, expandedDayData.day);
-                        setExpandedDay(null);
-                      }}
-                      className="text-xs lg:text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Open details
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-    </>
   );
 }

@@ -1,4 +1,4 @@
-const API_BASE = (process.env.NEXT_PUBLIC_API_HOST ?? "http://localhost:3001/api").replace(/\/$/, "");
+const API_BASE = (process.env.NEXT_PUBLIC_API_HOST || "").replace(/\/$/, "");
 const API_PREFIX = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function getAuthToken(): string | null {
@@ -19,23 +19,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
 
-  if (!response.ok) {
-    let message = `Request failed with ${response.status}`;
-    try {
-      const body = await response.json();
-      if (body?.message) message = body.message;
-    } catch (error) {
-      // ignore json parsing error
-    }
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    let message = result.message || result.errors?.[0]?.message || `Request failed with ${response.status}`;
     throw new Error(message);
   }
 
-  try {
-    return (await response.json()) as T;
-  } catch (error) {
-    // Some endpoints may not return a body
-    return {} as T;
-  }
+  return result.data as T;
 }
 
 export interface ApiExercise {
@@ -47,14 +38,17 @@ export interface ApiExercise {
 }
 
 export interface ApiExerciseLog {
-  log_id?: number;
+  set_id?: number; // New schema uses set_id
+  log_id?: number; // Legacy support
   session_detail_id?: number;
   actual_sets?: number;
   actual_reps?: number;
+  reps?: number; // New schema uses reps
   weight_kg?: number;
   rep?: number; // for creation payload consistency
-  status?: boolean; // set completion status
+  status?: boolean | string; // Can be boolean (legacy) or 'COMPLETED'/'UNFINISHED' (new)
   log_timestamp?: string;
+  notes?: string;
 }
 
 export interface ApiSessionDetail {
@@ -76,6 +70,7 @@ export interface ApiWorkoutSession {
   user_id?: number;
   scheduled_date: string;
   completed?: boolean;
+  status?: string; // e.g. 'PENDING', 'COMPLETED'
   notes?: string | null;
   type?: string | null;
   session_details?: ApiSessionDetail[];
@@ -85,49 +80,24 @@ export type ApiWorkoutSessionsResponse = ApiWorkoutSession[] | { sessions: ApiWo
 
 export async function fetchWorkoutSessions(
   userId: number,
-  month: string
+  month?: string,
+  date?: string
 ): Promise<ApiWorkoutSessionsResponse> {
-  return apiFetch<ApiWorkoutSessionsResponse>(`/workout-sessions?user_id=${userId}&month=${month}`);
+  const params = new URLSearchParams();
+  if (month) params.append("month", month);
+  if (date) params.append("date", date);
+  return apiFetch<ApiWorkoutSessionsResponse>(`/workouts?${params.toString()}`);
 }
 
 export async function fetchWorkoutSessionById(
   sessionId: string | number
 ): Promise<ApiWorkoutSession | null> {
   try {
-    // Try POST with body first (session_id in body)
-    const response = await apiFetch<ApiSessionDetailsResponse>(`/workout-sessions`, {
-      method: "POST",
-      body: JSON.stringify({ session_id: sessionId }),
-    });
-
-    if (response && Array.isArray(response.details)) {
-      // Map details array with corresponding logs
-      const sessionDetails = response.details.map((detail) => ({
-        ...detail,
-        exercise_logs: response.logs.filter(
-          (log) => log.session_detail_id === detail.session_detail_id
-        ),
-      }));
-
-      return {
-        session_id: Number(sessionId),
-        scheduled_date: new Date().toISOString().split('T')[0], // placeholder date
-        session_details: sessionDetails,
-      };
-    }
-  } catch (error) {
-    console.warn("Session details POST failed, trying GET fallback", error);
-  }
-
-  // Fallback to GET query parameter
-  try {
-    const sessions = await apiFetch<ApiWorkoutSession[]>(`/workout-sessions?session_id=${sessionId}`);
-    if (Array.isArray(sessions) && sessions.length > 0) return sessions[0];
+    return await apiFetch<ApiWorkoutSession>(`/workouts/${sessionId}`);
   } catch (error) {
     console.error("Failed to fetch session by ID", error);
+    return null;
   }
-
-  return null;
 }
 
 export async function createWorkoutSession(payload: {
@@ -137,17 +107,23 @@ export async function createWorkoutSession(payload: {
   notes?: string | null;
   exercises?: Array<{
     exercise_id: string | number;
-    reps: Array<{ rep: number; weight_kg?: number | null }>;
+    actual_sets: number;
+    actual_reps: number;
+    weight_kg: number;
   }>;
 }) {
-  return apiFetch<{ session_id?: number; id?: number; message?: string }>(`/workout-sessions`, {
+  return apiFetch<{ session_id?: number; id?: number }>(`/workouts`, {
     method: "POST",
     body: JSON.stringify({
-      user_id: payload.userId,
       scheduled_date: payload.scheduledDate,
       type: payload.type,
       notes: payload.notes,
-      exercises: payload.exercises,
+      exercises: payload.exercises?.map(ex => ({
+        exercise_id: Number(ex.exercise_id),
+        actual_sets: Number(ex.actual_sets),
+        actual_reps: Number(ex.actual_reps),
+        weight_kg: Number(ex.weight_kg)
+      })),
     }),
   });
 }
@@ -172,43 +148,41 @@ export async function addPlannedExercises(payload: {
 export async function updateExerciseLog(payload: {
   logId: string | number;
   actualReps?: number;
-  weightKg?: number | null;
-  logStatus?: boolean;
+  weight_kg?: number | null;
+  status?: boolean;
 }) {
-  return apiFetch(`/workout-sessions`, {
+  return apiFetch(`/workouts/logs`, {
     method: "PUT",
     body: JSON.stringify({
-      log_id: payload.logId,
+      log_id: Number(payload.logId),
       actual_reps: payload.actualReps,
-      weight_kg: payload.weightKg,
-      log_status: payload.logStatus,
+      weight_kg: payload.weight_kg,
+      status: payload.status,
     }),
   });
 }
 
 export async function logExerciseSet(payload: {
   sessionDetailId: string | number;
-  actualSets?: number;
   actualReps?: number;
-  weightKg?: number;
+  weight_kg?: number;
   status?: boolean;
 }) {
-  return apiFetch(`/workout-sessions`, {
+  return apiFetch(`/workouts/logs`, {
     method: "POST",
     body: JSON.stringify({
-      session_detail_id: payload.sessionDetailId,
-      actual_sets: payload.actualSets,
+      session_detail_id: Number(payload.sessionDetailId),
       actual_reps: payload.actualReps,
-      weight_kg: payload.weightKg,
+      weight_kg: payload.weight_kg,
       status: payload.status,
     }),
   });
 }
 
 export async function completeWorkoutSession(sessionId: string | number) {
-  return apiFetch(`/workout-sessions`, {
+  return apiFetch(`/workouts/${sessionId}`, {
     method: "PUT",
-    body: JSON.stringify({ session_id: sessionId, completed: true }),
+    body: JSON.stringify({ status: 'COMPLETED' }),
   });
 }
 
@@ -238,9 +212,8 @@ export async function updateSessionDetailPlannedSets(
 }
 
 export async function deleteWorkoutSession(sessionId: string | number) {
-  return apiFetch(`/workout-sessions`, {
+  return apiFetch(`/workouts/${sessionId}`, {
     method: "DELETE",
-    body: JSON.stringify({ session_id: sessionId }),
   });
 }
 
@@ -276,3 +249,31 @@ export async function fetchWorkoutTypes(): Promise<string[]> {
     return BASIC_WORKOUT_TYPES;
   }
 }
+
+export interface GrScore {
+  date: string;
+  gr_score: number;
+}
+
+export async function fetchProgress(userId: number, year: number, month: number): Promise<GrScore[]> {
+  return apiFetch<GrScore[]>(`/progress?user_id=${userId}&year=${year}&month=${month}`);
+}
+
+export interface SummaryPayload {
+  total_workouts: number;
+  total_volume?: number;
+  avg_intensity?: number;
+  gr_score: number;
+  gr_score_change?: number;
+  longest_streak?: number;
+  muscle_split?: Array<{ name: string; value: number }>;
+  calories_avg?: number;
+  protein_avg?: number;
+  carbs_avg?: number;
+  fats_avg?: number;
+}
+
+export async function fetchSummary(userId: number, periodType: 'weekly' | 'monthly', periodStart: string): Promise<SummaryPayload> {
+  return apiFetch<SummaryPayload>(`/summary?user_id=${userId}&period_type=${periodType}&period_start=${periodStart}`);
+}
+

@@ -33,7 +33,7 @@ function CalendarLume({ onMonthYearChange, onClose, defaultYear, defaultMonth, i
   });
 
   return (
-    <div className="rounded-xl bg-black/95 w-full max-w-md border border-border/60 p-4">
+    <div className="rounded-xl bg-black/60 backdrop-blur-md w-full max-w-md border border-neutral-800 p-4">
       {/* Header */}
       <div className="flex flex-col items-start gap-3 mb-6">
         <div className="flex w-full items-start justify-between gap-3">
@@ -85,7 +85,8 @@ function CalendarLume({ onMonthYearChange, onClose, defaultYear, defaultMonth, i
                     key={year.getFullYear()}
                     variant={year.getFullYear() === selectedYear ? "default" : "outline"}
                     size="sm"
-                    className="h-10"
+                    className="h-10 border border-neutral-800 bg-transparent"
+                    autoFocus={year.getFullYear() === selectedYear}
                     onClick={() => {
                       setSelectedYear(year.getFullYear());
                       setStep("month");
@@ -115,7 +116,8 @@ function CalendarLume({ onMonthYearChange, onClose, defaultYear, defaultMonth, i
                 key={month.toISOString()}
                 variant={month.getMonth() === selectedMonth ? "default" : "outline"}
                 size="sm"
-                className="h-12 flex items-center justify-center"
+                className="h-12 flex items-center justify-center border border-neutral-800 bg-transparent"
+                autoFocus={month.getMonth() === selectedMonth}
                 onClick={() => {
                   setSelectedMonth(month.getMonth());
                   setSelectedDate(new Date(selectedYear, month.getMonth(), 1));

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { useRouter, usePathname } from "next/navigation";
 
 interface User {
+  id: number;
   user_id: number;
   username: string;
   email: string;
@@ -20,7 +21,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE = process.env.NEXT_PUBLIC_API_HOST ?? "http://localhost:3001/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_HOST || "/api";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -77,21 +78,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Login failed");
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || result.errors?.[0]?.message || "Login failed");
       }
 
-      const data = await response.json();
-      
-      if (!data.token || !data.user) {
+      const { data } = result;
+      if (!data || !data.token || !data.user) {
         throw new Error("Invalid response format");
       }
 
+      // Ensure IDs are integers
+      const userData = {
+        ...data.user,
+        id: Number(data.user.id || data.user.user_id),
+        user_id: Number(data.user.user_id || data.user.id)
+      };
+
       setToken(data.token);
-      setUser(data.user);
+      setUser(userData);
       localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("auth_user", JSON.stringify(data.user));
+      localStorage.setItem("auth_user", JSON.stringify(userData));
       
       router.push("/workout");
     } catch (error) {
@@ -102,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (username: string, email: string, password: string) => {
     try {
-      const response = await fetch(`${API_BASE}/auth/register`, {
+      const response = await fetch(`${API_BASE}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -110,9 +118,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ username, email, password }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Registration failed");
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || result.errors?.[0]?.message || "Registration failed");
       }
 
       // After successful registration, automatically log in

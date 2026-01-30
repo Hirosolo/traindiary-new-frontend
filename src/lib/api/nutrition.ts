@@ -1,4 +1,4 @@
-const API_BASE = (process.env.NEXT_PUBLIC_API_HOST ?? "http://localhost:3001/api").replace(/\/$/, "");
+const API_BASE = (process.env.NEXT_PUBLIC_API_HOST || "").replace(/\/$/, "");
 const API_PREFIX = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function getAuthToken(): string | null {
@@ -57,23 +57,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
 
-  if (!response.ok) {
-    let message = `Request failed with ${response.status}`;
-    try {
-      const body = await response.json();
-      if (body?.message) message = body.message;
-    } catch (error) {
-      // ignore json parsing error
-    }
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    let message = result.message || result.errors?.[0]?.message || `Request failed with ${response.status}`;
     throw new Error(message);
   }
 
-  try {
-    return (await response.json()) as T;
-  } catch (error) {
-    // Some endpoints may not return a body
-    return {} as T;
-  }
+  return result.data as T;
 }
 
 export interface ApiNutrient {
@@ -134,18 +125,44 @@ export interface ApiMealsResponse {
 
 export async function fetchMeals(
   userId: number,
-  month: string
+  date?: string,
+  month?: string
 ): Promise<ApiMealsResponse> {
-  // Use /food-logs to retrieve user meals; include month if provided
-  const query = month ? `user_id=${userId}&month=${month}` : `user_id=${userId}`;
-  return apiFetch<ApiMealsResponse>(`/food-logs?${query}`);
+  const params = new URLSearchParams();
+  if (date) params.append("date", date);
+  if (month) params.append("month", month);
+  return apiFetch<ApiMealsResponse>(`/meals?${params.toString()}`);
+}
+
+export interface NutritionGoal {
+  calories_target: number;
+  protein_target_g: number;
+  carbs_target_g: number;
+  fat_target_g: number;
+  fiber_target_g: number;
+  hydration_target_ml: number;
+  start_date: string;
+}
+
+export async function fetchNutritionGoal(date: string): Promise<NutritionGoal | null> {
+  try {
+    return await apiFetch<NutritionGoal>(`/nutrition/goals?date=${date}`);
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function saveNutritionGoal(goal: NutritionGoal): Promise<void> {
+  await apiFetch(`/nutrition/goals`, {
+    method: "POST",
+    body: JSON.stringify(goal),
+  });
 }
 
 
 export async function fetchMealDetails(mealId: string | number): Promise<any | null> {
   try {
-    const response = await apiFetch<any>(`/meal-details?meal_id=${mealId}`);
-    return response;
+    return await apiFetch<any>(`/meals/${mealId}`);
   } catch (error) {
     console.error("Failed to fetch meal details", error);
     return null;
@@ -223,42 +240,32 @@ export async function createMeal(payload: {
   mealDate: string;
   mealTime?: string;
   mealType: string;
-  name: string;
-  protein: number;
-  carbs: number;
-  fats: number;
-  fiber: number;
-  calories: number;
+  name?: string;
   items?: Array<{
-    name: string;
+    name?: string;
     quantity?: number;
     unit?: string;
-    food_id?: number;
-    id?: number;
+    food_id?: number | string;
+    id?: number | string;
     grams_per_serving?: number;
   }>;
   notes?: string | null;
 }) {
-  // Map items to foods array with food_id and amount_grams
-  // Calculate amount_grams = quantity (number of servings) * grams_per_serving
-  const foods = (payload.items || []).map((item) => {
-    const quantity = item.quantity ?? 1; // Number of servings
-    const gramsPerServing = item.grams_per_serving ?? 100; // Grams per serving
-    const amountGrams = quantity * gramsPerServing; // Total grams
-    
+  const details = (payload.items || []).map((item) => {
+    const quantity = item.quantity ?? 1;
+    const gramsPerServing = item.grams_per_serving ?? 100;
     return {
-      food_id: item.food_id ?? item.id ?? 0,
-      amount_grams: amountGrams,
+      food_id: Number(item.food_id ?? item.id),
+      amount_grams: quantity * gramsPerServing,
     };
   });
 
-  return apiFetch<{ meal_id?: number; id?: number; message?: string }>(`/food-logs`, {
+  return apiFetch<{ meal_id?: number; id?: number }>(`/meals`, {
     method: "POST",
     body: JSON.stringify({
-      user_id: payload.userId,
       meal_type: payload.mealType,
       log_date: payload.mealDate,
-      foods: foods,
+      details: details,
     }),
   });
 }
@@ -290,11 +297,8 @@ export async function updateMeal(payload: {
 }
 
 export async function deleteMeal(mealId: string | number) {
-  return apiFetch<{ message?: string }>(`/food-logs`, {
+  return apiFetch<{ message?: string }>(`/meals/${mealId}`, {
     method: "DELETE",
-    body: JSON.stringify({
-      meal_id: Number(mealId),
-    }),
   });
 }
 

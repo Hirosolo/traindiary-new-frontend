@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface NavItem {
   name: string;
   link: string;
+  icon?: string;
 }
 
 interface AnimatedFixedNavbarProps {
@@ -19,11 +20,11 @@ interface AnimatedFixedNavbarProps {
 export default function NavBar({
   brand = "TrainDiary",
   items = [
-    { name: "Home", link: "/" },
-    { name: "Workout", link: "workout" },
-    { name: "Nutrition", link: "nutrition" },
-    { name: "Summary", link: "summary" },
-    { name: "Programs", link: "programs" },
+    { name: "Home", link: "/", icon: "home" },
+    { name: "Workout", link: "workout", icon: "fitness_center" },
+    { name: "Nutrition", link: "nutrition", icon: "restaurant" },
+    { name: "Summary", link: "summary", icon: "analytics" },
+    { name: "Programs", link: "programs", icon: "school" },
   ],
   className,
 }: AnimatedFixedNavbarProps) {
@@ -34,7 +35,10 @@ export default function NavBar({
   const { user } = useAuth();
 
   const getHref = (link: string) => (link.startsWith("/") ? link : `/${link}`);
-  const isActive = (link: string) => pathname === getHref(link);
+  const isActive = (link: string) => {
+    const href = getHref(link);
+    return pathname === href || pathname === href + "/";
+  };
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setElevated(latest > 40);
@@ -127,10 +131,23 @@ export default function NavBar({
             {items.map((item) => (
               <a
                 key={`mobile-${item.name}`}
-                className="text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-text-dim hover:text-white transition-colors"
+                className={cn(
+                  "flex items-center gap-4 text-3xl font-bold font-display uppercase tracking-tight border-b pb-4 transition-colors",
+                  isActive(item.link)
+                    ? "text-white border-primary"
+                    : "text-text-dim hover:text-white border-white/5",
+                )}
                 href={getHref(item.link)}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
+                {item.icon && (
+                  <span className={cn(
+                    "material-symbols-outlined text-4xl transition-colors",
+                    isActive(item.link) ? "text-primary" : "text-text-dim"
+                  )}>
+                    {item.icon}
+                  </span>
+                )}
                 {item.name}
               </a>
             ))}
