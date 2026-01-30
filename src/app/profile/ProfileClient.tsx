@@ -21,6 +21,8 @@ export default function ProfileClient() {
 
   const displayEmail = useMemo(() => profile?.email ?? user?.email ?? "", [profile?.email, user?.email]);
 
+  const displayPhone = useMemo(() => profile?.phone_number ?? "", [profile?.phone_number]);
+
   useEffect(() => {
     let ignore = false;
     async function load() {
@@ -88,7 +90,7 @@ export default function ProfileClient() {
           <div className="overflow-hidden rounded-xl border border-surface-highlight bg-surface-card">
             {[
               { label: "Name", value: displayName || "-" },
-              { label: "Phone", value: profile?.phone ?? "-" },
+              { label: "Phone", value: displayPhone || "-" },
               { label: "Email", value: displayEmail || "-" },
             ].map((item, index, arr) => (
               <div key={item.label}>

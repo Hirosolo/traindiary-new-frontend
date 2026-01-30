@@ -30,11 +30,11 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export interface ApiUser {
-  id: number;
+  id?: number;
   user_id: number;
   username: string;
   email: string;
-  phone?: string;
+  phone_number?: string;
   avatar_url?: string;
 }
 

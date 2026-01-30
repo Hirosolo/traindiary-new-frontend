@@ -125,16 +125,16 @@ export default function WorkoutCalendar({
               <span className="text-[10px] uppercase tracking-[0.2em] text-text-dim font-bold block mb-1 group-hover:text-primary transition-colors">
                 Select Period
               </span>
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl lg:text-3xl font-display font-bold uppercase italic tracking-tighter text-white leading-none">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-display font-bold uppercase italic tracking-tighter text-white leading-none">
                   {month} {year}
                 </h2>
-                <span className="material-symbols-outlined text-text-dim group-hover:text-white transition-colors text-xl">
+                <span className="material-symbols-outlined text-text-dim group-hover:text-white transition-colors text-lg sm:text-xl">
                   calendar_month
                 </span>
               </div>
-              <p className="text-text-dim text-[11px] font-bold uppercase tracking-widest mt-2">
-                {sessionsCount} SESSIONS LOGGED • <span className="text-primary">CONSISTENCY MODE</span>
+              <p className="text-text-dim text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mt-1.5 sm:mt-2">
+                {sessionsCount} SESSIONS <span className="hidden xs:inline">LOGGED</span> • <span className="text-primary">CONSISTENCY</span>
               </p>
             </button>
 
@@ -189,18 +189,18 @@ export default function WorkoutCalendar({
             return (
               <div
                 key={index}
-                className={`bg-background-dark p-3 relative group transition-all duration-300 h-[100px] lg:h-[130px] overflow-visible border-r border-b border-white/5 ${
+                className={`bg-background-dark p-1.5 sm:p-3 relative group transition-all duration-300 h-[80px] sm:h-[100px] lg:h-[130px] overflow-visible border-r border-b border-white/5 ${
                   hasSessions ? "cursor-pointer hover:bg-surface-dark/50" : "cursor-pointer hover:bg-white/5"
                 } ${dayData.isToday ? "bg-primary/5" : ""}`}
                 onClick={() => handleDayClick(dayData)}
               >
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start mb-1 sm:mb-2">
                   <span
-                    className={`text-xs font-bold ${
+                    className={`text-[10px] sm:text-xs font-bold ${
                       !dayData.isCurrentMonth
                         ? "text-white/10"
                         : dayData.isToday
-                        ? "text-primary scale-125"
+                        ? "text-primary scale-110 sm:scale-125"
                         : hasSessions
                         ? "text-white"
                         : "text-text-dim"
@@ -209,26 +209,26 @@ export default function WorkoutCalendar({
                     {dayData.day}
                   </span>
                   {dayData.isToday && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-primary animate-pulse" />
                   )}
                 </div>
 
                 {/* SESSION CONTENT */}
                 {session && (
-                  <div className="absolute inset-x-3 top-8 bottom-3 flex flex-col items-center justify-between">
+                  <div className="absolute inset-x-1 sm:inset-x-3 top-6 sm:top-8 bottom-1.5 sm:bottom-3 flex flex-col items-center justify-between">
                         {/* LARGE CENTERED ICON */}
-                        <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center bg-white/5 border border-white/10 transition-transform group-hover:scale-110 ${session.status === 'COMPLETED' ? 'text-emerald-500 border-emerald-500/30' : 'text-text-dim'}`}>
-                             <span className="material-symbols-outlined text-xl lg:text-2xl">
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center bg-white/5 border border-white/10 transition-transform group-hover:scale-110 ${session.status === 'COMPLETED' ? 'text-emerald-500 border-emerald-500/30' : 'text-text-dim'}`}>
+                             <span className="material-symbols-outlined text-base sm:text-xl lg:text-2xl">
                                 {getCategoryIcon(session.type, session.title)}
                              </span>
                         </div>
 
                         {/* BOTTOM INFO */}
-                        <div className="w-full flex flex-col gap-1.5">
+                        <div className="w-full flex flex-col gap-1 sm:gap-1.5">
                             <div 
-                              className={`h-1 rounded-full w-full ${getStatusColor(session.status)} transition-all duration-500`}
+                              className={`h-0.5 sm:h-1 rounded-full w-full ${getStatusColor(session.status)} transition-all duration-500`}
                             />
-                            <p className="text-[8px] font-black text-white/40 uppercase truncate text-center tracking-widest">
+                            <p className="hidden sm:block text-[8px] font-black text-white/40 uppercase truncate text-center tracking-widest">
                                 {session.title}
                             </p>
                         </div>

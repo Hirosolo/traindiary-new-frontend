@@ -70,7 +70,7 @@ export default function ActivityOverview({
           <h3 className="text-[10px] font-bold tracking-[0.2em] text-text-dim uppercase mb-4 px-1">
             Muscle Split (Weekly)
           </h3>
-          <div className="bg-surface-card p-5 rounded-2xl border border-white/5">
+          <div className="bg-surface-card p-5 rounded-2xl">
             <div className="h-48 w-full relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -82,13 +82,14 @@ export default function ActivityOverview({
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
+                    stroke="none"
                   >
                     {muscleSplit.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#121212', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                    contentStyle={{ backgroundColor: '#121212'}}
                     itemStyle={{ color: '#fff', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}
                   />
                 </PieChart>
