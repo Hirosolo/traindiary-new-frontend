@@ -310,7 +310,7 @@ export default function MealDetails({
                   ];
 
                   return (
-                    <div key={food.id ?? idx} className="pb-4 border-b border-white/5 last:border-0 last:pb-0">
+                    <div key={food.meal_detail_id ?? food.food_id ?? idx} className="pb-4 border-b border-white/5 last:border-0 last:pb-0">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h4 className="text-sm font-semibold text-white">{food.name}</h4>
                         <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-primary/20 text-primary shrink-0">
