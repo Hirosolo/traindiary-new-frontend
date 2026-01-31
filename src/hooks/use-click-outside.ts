@@ -4,7 +4,7 @@ import { useEffect } from "react";
  * Calls the handler when a pointer event occurs outside the given element.
  */
 export default function useClickOutside<T extends HTMLElement>(
-  ref: React.RefObject<T>,
+  ref: React.RefObject<T | null>,
   handler: (event: MouseEvent | TouchEvent) => void,
 ) {
   useEffect(() => {
