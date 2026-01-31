@@ -8,7 +8,7 @@ const TRANSITION = {
   type: 'spring',
   bounce: 0.05,
   duration: 0.3,
-};
+} as const;
 
 function Popover() {
   const uniqueId = useId();
