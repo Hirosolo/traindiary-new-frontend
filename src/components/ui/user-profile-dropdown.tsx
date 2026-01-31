@@ -72,7 +72,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({ user, 
       },
     },
     exit: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.15 } },
-  };
+  } as const;
 
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
