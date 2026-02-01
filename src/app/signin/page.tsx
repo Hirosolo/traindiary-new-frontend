@@ -93,7 +93,7 @@ export default function SignInPage() {
                 {showVerifyLink && (
                   <div className="mt-2">
                     <Link
-                      href={`/verify-email?email=${encodeURIComponent(formData.email)}`}
+                      href="/verify-email"
                       className="text-white underline decoration-electric-blue/60 underline-offset-4"
                     >
                       Verify your email

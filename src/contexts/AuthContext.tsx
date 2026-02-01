@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(result.message || result.errors?.[0]?.message || "Registration failed");
       }
 
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+      router.push('/verify-email');
     } catch (error) {
       console.error("Registration error:", error);
       throw error;

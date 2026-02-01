@@ -8,10 +8,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_HOST || '/api';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
-  const initialEmail = useMemo(() => searchParams.get('email') || '', [searchParams]);
   const token = useMemo(() => searchParams.get('token') || '', [searchParams]);
 
-  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
@@ -50,7 +48,7 @@ export default function VerifyEmailPage() {
       const response = await fetch(`${API_BASE}/auth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ code }),
       });
 
       const result = await response.json();
@@ -103,22 +101,6 @@ export default function VerifyEmailPage() {
                 <div className="px-4 py-3 rounded text-sm">{status.message}</div>
               </div>
             )}
-
-            <div className="group">
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-text-dim group-focus-within:text-electric-blue transition-colors">
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@performance.com"
-                required
-                disabled={isLoading}
-                className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue disabled:opacity-50"
-              />
-            </div>
 
             <div className="group">
               <label className="block text-[10px] font-bold uppercase tracking-widest text-text-dim group-focus-within:text-electric-blue transition-colors">
