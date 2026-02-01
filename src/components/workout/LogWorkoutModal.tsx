@@ -12,7 +12,8 @@ export interface NewWorkoutSession {
   exercises: {
     id: string | number;
     name: string;
-    reps: { rep: number; weight_kg?: number | null }[];
+    type?: string;
+    reps: { rep?: number; duration?: number; weight_kg?: number | null }[];
   }[];
 }
 
@@ -22,6 +23,7 @@ interface Exercise {
   category?: string;
   description?: string;
   image?: string;
+  type?: string;
 }
 
 interface SelectedExercise extends Exercise {
@@ -78,6 +80,7 @@ export default function LogWorkoutModal({
   onClose,
   onSubmit,
 }: LogWorkoutModalProps) {
+  const isCardioExercise = (exercise: Exercise) => (exercise.type || "").toLowerCase() === "cardio";
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [workoutType, setWorkoutType] = useState<string>("");
@@ -106,6 +109,7 @@ export default function LogWorkoutModal({
           category: ex.category,
           description: ex.description,
           image: ex.image,
+          type: ex.type,
         }));
         setAvailableExercises(normalized);
       } catch (error) {
@@ -153,9 +157,10 @@ export default function LogWorkoutModal({
     if (isSelected) {
       setSelectedExercises(selectedExercises.filter((ex) => ex.id !== exercise.id));
     } else {
+      const defaultTargets = isCardioExercise(exercise) ? [20] : [12, 12, 12];
       setSelectedExercises([
         ...selectedExercises,
-        { ...exercise, reps: [12, 12, 12] },
+        { ...exercise, reps: defaultTargets },
       ]);
     }
   };
@@ -239,11 +244,17 @@ export default function LogWorkoutModal({
         }),
         type: workoutType || "Workout",
         note: note || undefined,
-        exercises: selectedExercises.map((ex) => ({
-          id: ex.id,
-          name: ex.name,
-          reps: ex.reps.map((rep) => ({ rep, weight_kg: null })),
-        })),
+        exercises: selectedExercises.map((ex) => {
+          const isCardio = isCardioExercise(ex);
+          return {
+            id: ex.id,
+            name: ex.name,
+            type: ex.type,
+            reps: ex.reps.map((rep) =>
+              isCardio ? { duration: rep, weight_kg: null } : { rep, weight_kg: null }
+            ),
+          };
+        }),
       });
 
       setStep(1);
@@ -525,7 +536,7 @@ export default function LogWorkoutModal({
                     <div className="space-y-2">
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[9px] font-bold text-text-dim uppercase tracking-wider">
-                          Sets & Reps
+                          {isCardioExercise(exercise) ? "Sets & Duration" : "Sets & Reps"}
                         </label>
                         <div className="flex items-center gap-2 text-[10px] text-text-dim">
                           <span>{exercise.reps.length} set{exercise.reps.length !== 1 ? "s" : ""}</span>
@@ -561,7 +572,9 @@ export default function LogWorkoutModal({
                                 }
                                 className="w-20 bg-surface-highlight border-none rounded text-sm p-2 text-center font-bold text-primary focus:ring-1 focus:ring-primary"
                               />
-                              <span className="text-[11px] font-bold text-text-dim">reps</span>
+                              <span className="text-[11px] font-bold text-text-dim">
+                                {isCardioExercise(exercise) ? "min" : "reps"}
+                              </span>
                             </div>
                             {exercise.reps.length > 1 && (
                               <button

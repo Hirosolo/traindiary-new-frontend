@@ -35,6 +35,7 @@ export interface ApiExercise {
   category?: string;
   description?: string;
   image?: string;
+  type?: string;
 }
 
 export interface ApiExerciseLog {
@@ -44,6 +45,7 @@ export interface ApiExerciseLog {
   actual_sets?: number;
   actual_reps?: number;
   reps?: number; // New schema uses reps
+  duration?: number;
   weight_kg?: number;
   rep?: number; // for creation payload consistency
   status?: boolean | string; // Can be boolean (legacy) or 'COMPLETED'/'UNFINISHED' (new)
@@ -110,6 +112,7 @@ export async function createWorkoutSession(payload: {
     actual_sets: number;
     actual_reps: number;
     weight_kg: number;
+    duration?: number;
   }>;
 }) {
   return apiFetch<{ session_id?: number; id?: number }>(`/workouts`, {
@@ -122,7 +125,8 @@ export async function createWorkoutSession(payload: {
         exercise_id: Number(ex.exercise_id),
         actual_sets: Number(ex.actual_sets),
         actual_reps: Number(ex.actual_reps),
-        weight_kg: Number(ex.weight_kg)
+        weight_kg: Number(ex.weight_kg),
+        duration: ex.duration !== undefined ? Number(ex.duration) : undefined,
       })),
     }),
   });
@@ -147,6 +151,7 @@ export async function addPlannedExercises(payload: {
 export async function updateExerciseLog(payload: {
   logId: string | number;
   actualReps?: number;
+  duration?: number;
   weight_kg?: number | null;
   status?: boolean;
 }) {
@@ -155,6 +160,7 @@ export async function updateExerciseLog(payload: {
     body: JSON.stringify({
       log_id: Number(payload.logId),
       actual_reps: payload.actualReps,
+      duration: payload.duration,
       weight_kg: payload.weight_kg,
       status: payload.status,
     }),
@@ -164,6 +170,7 @@ export async function updateExerciseLog(payload: {
 export async function logExerciseSet(payload: {
   sessionDetailId: string | number;
   actualReps?: number;
+  duration?: number;
   weight_kg?: number;
   status?: boolean;
 }) {
@@ -172,6 +179,7 @@ export async function logExerciseSet(payload: {
     body: JSON.stringify({
       session_detail_id: Number(payload.sessionDetailId),
       actual_reps: payload.actualReps,
+      duration: payload.duration,
       weight_kg: payload.weight_kg,
       status: payload.status,
     }),

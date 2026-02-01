@@ -140,21 +140,24 @@ export default function WorkoutPage() {
   };
 
   const mapSessionDetailToExercise = useCallback((detail: ApiSessionDetail): Exercise => {
+    const isCardio = (detail.exercises?.type || "").toLowerCase() === "cardio";
     const logs = detail.exercise_logs ?? [];
     const plannedSets = detail.planned_sets ?? logs.length ?? 0;
     const sets: ExerciseSet[] = logs.length > 0
         ? logs.map((log, index) => ({
             id: (log.set_id ?? log.log_id ?? `${detail.session_detail_id ?? detail.exercise_id}-log-${index}`).toString(),
             setNumber: index + 1,
-            weight: log.weight_kg ?? 0,
-            reps: log.reps ?? log.actual_reps ?? log.rep ?? 0,
+            weight: isCardio ? 0 : (log.weight_kg ?? 0),
+            reps: isCardio ? 0 : (log.reps ?? log.actual_reps ?? log.rep ?? 0),
+            duration: isCardio ? (log.duration ?? 0) : undefined,
             status: typeof log.status === 'string' ? log.status === 'COMPLETED' : (log.status ?? false),
           }))
         : Array.from({ length: plannedSets }, (_, index) => ({
             id: `${detail.session_detail_id ?? detail.exercise_id ?? "planned"}-${index}`,
             setNumber: index + 1,
             weight: 0,
-            reps: detail.planned_reps ?? 0,
+            reps: isCardio ? 0 : (detail.planned_reps ?? 0),
+            duration: isCardio ? (detail.planned_reps ?? 0) : undefined,
             status: false,
           }));
 
@@ -163,6 +166,8 @@ export default function WorkoutPage() {
       exercise_id: detail.exercise_id,
       name: detail.exercises?.name ?? "Workout Exercise",
       category: detail.exercises?.category,
+      type: detail.exercises?.type,
+      isCardio,
       sets,
     };
   }, []);
@@ -300,7 +305,7 @@ export default function WorkoutPage() {
           const lastSet = ex.sets[ex.sets.length - 1];
           return {
             ...ex,
-            sets: [...ex.sets, { id: `new-${Date.now()}`, setNumber: ex.sets.length + 1, weight: lastSet?.weight ?? 0, reps: lastSet?.reps ?? 0, status: false }]
+            sets: [...ex.sets, { id: `new-${Date.now()}`, setNumber: ex.sets.length + 1, weight: ex.isCardio ? 0 : (lastSet?.weight ?? 0), reps: ex.isCardio ? 0 : (lastSet?.reps ?? 0), duration: ex.isCardio ? (lastSet?.duration ?? 0) : undefined, status: false }]
           };
         }
         return ex;
@@ -319,9 +324,21 @@ export default function WorkoutPage() {
           for (const set of ex.sets) {
               const numericId = Number(set.id);
               if (Number.isFinite(numericId)) {
-                  await updateExerciseLog({ logId: numericId, actualReps: set.reps, weight_kg: set.weight, status: set.status });
+                  await updateExerciseLog({
+                    logId: numericId,
+                    actualReps: ex.isCardio ? undefined : set.reps,
+                    duration: ex.isCardio ? set.duration ?? 0 : undefined,
+                    weight_kg: ex.isCardio ? 0 : set.weight,
+                    status: set.status,
+                  });
               } else {
-                  await logExerciseSet({ sessionDetailId: Number(ex.id), actualReps: set.reps, weight_kg: set.weight, status: set.status });
+                  await logExerciseSet({
+                    sessionDetailId: Number(ex.id),
+                    actualReps: ex.isCardio ? undefined : set.reps,
+                    duration: ex.isCardio ? set.duration ?? 0 : undefined,
+                    weight_kg: ex.isCardio ? 0 : set.weight,
+                    status: set.status,
+                  });
               }
           }
       }
@@ -360,7 +377,16 @@ export default function WorkoutPage() {
           }
         }
 
-        const exercisesPayload = data.exercises.flatMap(ex => ex.reps.map(r => ({ exercise_id: ex.id, actual_sets: 1, actual_reps: r.rep, weight_kg: r.weight_kg ?? 0 })));
+        const exercisesPayload = data.exercises.flatMap(ex => {
+          const isCardio = (ex.type || "").toLowerCase() === "cardio";
+          return ex.reps.map(r => ({
+            exercise_id: ex.id,
+            actual_sets: 1,
+            actual_reps: isCardio ? 0 : (r.rep ?? 0),
+            duration: isCardio ? (r.duration ?? 0) : undefined,
+            weight_kg: isCardio ? 0 : (r.weight_kg ?? 0),
+          }));
+        });
         await createWorkoutSession({ userId, scheduledDate: data.date, type: data.type, notes: data.note, exercises: exercisesPayload });
         await refreshSessions();
         setIsLogWorkoutModalOpen(false);

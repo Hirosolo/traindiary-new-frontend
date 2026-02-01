@@ -10,6 +10,7 @@ export interface ExerciseSet {
   previousWeight?: number;
   weight: number;
   reps: number;
+  duration?: number;
   status?: boolean;
 }
 
@@ -20,6 +21,8 @@ export interface Exercise {
   category?: string;
   lastPerformance?: string;
   sets: ExerciseSet[];
+  type?: string;
+  isCardio?: boolean;
   isLocked?: boolean;
 }
 
@@ -38,7 +41,7 @@ interface WorkoutDetailsProps {
   workout: WorkoutDetailsData | null;
   onClose: () => void;
   onFinishWorkout: (workoutId: string) => void;
-  onUpdateSet: (exerciseId: string, setId: string, field: "weight" | "reps" | "status", value: number | boolean) => void;
+  onUpdateSet: (exerciseId: string, setId: string, field: "weight" | "reps" | "duration" | "status", value: number | boolean) => void;
   onAddSet: (exerciseId: string) => void;
   onAddExercise?: () => void;
   onDeleteExercise?: (exerciseId: string) => void;
@@ -186,6 +189,7 @@ export default function WorkoutDetails({
               {workout.exercises.map((exercise, exerciseIndex) => {
                 const isExpanded = expandedExercises.has(exercise.id);
                 const isDone = allSetsCompleted(exercise);
+                const isCardio = Boolean(exercise.isCardio);
 
                 return (
                   <div
@@ -249,8 +253,8 @@ export default function WorkoutDetails({
                             <div className="grid grid-cols-5 gap-2 text-[8px] font-black text-text-dim uppercase tracking-[0.2em] px-2 mb-2">
                               <span>Set</span>
                               <span>Prev</span>
-                              <span>Weight</span>
-                              <span>Reps</span>
+                              <span>{isCardio ? "-" : "Weight"}</span>
+                              <span>{isCardio ? "Duration" : "Reps"}</span>
                               <span className="text-right">Action</span>
                             </div>
 
@@ -271,28 +275,46 @@ export default function WorkoutDetails({
 
                                 {isReadOnly ? (
                                   <div className="col-span-2 flex items-center gap-4">
-                                     <span className="text-xs font-black text-primary italic">{set.weight} KG</span>
-                                     <span className="text-xs font-black text-white italic">{set.reps} REPS</span>
+                                     <span className="text-xs font-black text-primary italic">
+                                       {isCardio ? "—" : `${set.weight} KG`}
+                                     </span>
+                                     <span className="text-xs font-black text-white italic">
+                                       {isCardio ? `${set.duration ?? 0} MIN` : `${set.reps} REPS`}
+                                     </span>
                                   </div>
                                 ) : (
                                   <>
                                     <div className="relative">
-                                       <input
+                                      {isCardio ? (
+                                        <span className="text-xs font-black text-primary italic block text-center py-2">—</span>
+                                      ) : (
+                                        <input
                                           className="w-full bg-white/5 border-none rounded-xl text-xs py-2 px-1 text-center font-black text-primary focus:ring-1 focus:ring-primary placeholder:text-white/5"
                                           type="number"
                                           value={set.weight || ""}
                                           onChange={(e) => onUpdateSet(exercise.id, set.id, "weight", parseFloat(e.target.value) || 0)}
                                           placeholder="0"
-                                       />
+                                        />
+                                      )}
                                     </div>
                                     <div className="relative">
-                                       <input
+                                      {isCardio ? (
+                                        <input
+                                          className="w-full bg-white/5 border-none rounded-xl text-xs py-2 px-1 text-center font-black text-white focus:ring-1 focus:ring-primary placeholder:text-white/5"
+                                          type="number"
+                                          value={set.duration ?? ""}
+                                          onChange={(e) => onUpdateSet(exercise.id, set.id, "duration", parseInt(e.target.value) || 0)}
+                                          placeholder="0"
+                                        />
+                                      ) : (
+                                        <input
                                           className="w-full bg-white/5 border-none rounded-xl text-xs py-2 px-1 text-center font-black text-white focus:ring-1 focus:ring-primary placeholder:text-white/5"
                                           type="number"
                                           value={set.reps || ""}
                                           onChange={(e) => onUpdateSet(exercise.id, set.id, "reps", parseInt(e.target.value) || 0)}
                                           placeholder="0"
-                                       />
+                                        />
+                                      )}
                                     </div>
                                   </>
                                 )}
