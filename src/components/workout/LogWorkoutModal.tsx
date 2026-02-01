@@ -261,12 +261,6 @@ export default function LogWorkoutModal({
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   const totalSets = selectedExercises.reduce((sum, ex) => sum + ex.reps.length, 0);
 
   if (!isOpen) return null;
@@ -274,7 +268,6 @@ export default function LogWorkoutModal({
   return (
     <div
       className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={handleBackdropClick}
     >
       <div className="bg-surface-dark border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}

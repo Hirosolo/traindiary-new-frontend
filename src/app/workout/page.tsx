@@ -13,6 +13,7 @@ import WorkoutDetails, {
   ExerciseSet,
 } from "@/components/workout/WorkoutDetails";
 import LogWorkoutModal, { NewWorkoutSession } from "@/components/workout/LogWorkoutModal";
+import AddExerciseModal, { ExerciseToAdd } from "@/components/workout/AddExerciseModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   completeWorkoutSession,
@@ -44,7 +45,7 @@ export default function WorkoutPage() {
   
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutDetailsData | null>(null);
   const [isLogWorkoutModalOpen, setIsLogWorkoutModalOpen] = useState(false);
-  const [isAppendMode, setIsAppendMode] = useState(false);
+  const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
   
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
@@ -159,6 +160,7 @@ export default function WorkoutPage() {
 
     return {
       id: (detail.session_detail_id ?? detail.exercise_id ?? `exercise-${Date.now()}`).toString(),
+      exercise_id: detail.exercise_id,
       name: detail.exercises?.name ?? "Workout Exercise",
       category: detail.exercises?.category,
       sets,
@@ -342,30 +344,33 @@ export default function WorkoutPage() {
   };
 
   const handleAddExercise = () => {
-      setIsAppendMode(true);
-      setIsLogWorkoutModalOpen(true);
+      setIsAddExerciseModalOpen(true);
   };
 
   const handleLogWorkoutSubmit = async (data: NewWorkoutSession) => {
-      if (isAppendMode && selectedWorkout) {
-          try {
-              await addPlannedExercises({
-                  sessionId: selectedWorkout.id,
-                  exercises: data.exercises.map(ex => ({ exercise_id: ex.id, planned_sets: ex.reps.length, planned_reps: ex.reps[0].rep }))
-              });
-              const fresh = await fetchWorkoutSessionById(selectedWorkout.id);
-              if (fresh) setSelectedWorkout(buildWorkoutDetails(fresh));
-          } catch (e) {
-             setErrorMessage("Append failed");
-          }
-      } else {
-          // Normal creation (already refactored in previous step)
+      try {
           const exercisesPayload = data.exercises.flatMap(ex => ex.reps.map(r => ({ exercise_id: ex.id, actual_sets: 1, actual_reps: r.rep, weight_kg: r.weight_kg ?? 0 })));
           await createWorkoutSession({ userId, scheduledDate: data.date, type: data.type, notes: data.note, exercises: exercisesPayload });
           await refreshSessions();
+          setIsLogWorkoutModalOpen(false);
+      } catch (e) {
+          setErrorMessage("Failed to create session");
       }
-      setIsLogWorkoutModalOpen(false);
-      setIsAppendMode(false);
+  };
+
+  const handleAddExerciseSubmit = async (exercises: ExerciseToAdd[]) => {
+      if (!selectedWorkout) return;
+      try {
+          await addPlannedExercises({
+              sessionId: selectedWorkout.id,
+              exercises: exercises.map(ex => ({ exercise_id: ex.id, planned_sets: ex.sets, planned_reps: ex.reps }))
+          });
+          const fresh = await fetchWorkoutSessionById(selectedWorkout.id);
+          if (fresh) setSelectedWorkout(buildWorkoutDetails(fresh));
+          setIsAddExerciseModalOpen(false);
+      } catch (e) {
+          setErrorMessage("Failed to add exercises");
+      }
   };
 
   const currentSessions = workoutSessions[selectedDate.getDate().toString()] || [];
@@ -380,7 +385,7 @@ export default function WorkoutPage() {
           grScore={grScore}
           grScoreChange={grScoreChange}
           muscleSplit={muscleSplit}
-          onLogWorkout={() => { setIsAppendMode(false); setIsLogWorkoutModalOpen(true); }}
+          onLogWorkout={() => setIsLogWorkoutModalOpen(true)}
         />
 
         <div className="flex-1 flex flex-col bg-background-dark relative">
@@ -445,9 +450,23 @@ export default function WorkoutPage() {
                     onUpdateSet={handleUpdateSet}
                     onAddSet={handleAddSet}
                     onAddExercise={handleAddExercise}
-                    onDeleteExercise={(id) => {
-                        setSelectedWorkout(prev => prev ? { ...prev, exercises: prev.exercises.filter(e => e.id !== id) } : null);
-                        setHasUnsavedChanges(true);
+                    onDeleteExercise={async (id) => {
+                        if (!selectedWorkout) return;
+                        
+                        try {
+                          // Find the exercise to get its session_detail_id
+                          const exercise = selectedWorkout.exercises.find(e => e.id === id);
+                          if (exercise?.id) {
+                            // Call API to delete from database
+                            await deleteSessionDetail(selectedWorkout.id, exercise.id);
+                                
+                            // Update local state
+                            setSelectedWorkout(prev => prev ? { ...prev, exercises: prev.exercises.filter(e => e.id !== id) } : null);
+                          }
+                        } catch (error) {
+                          console.error('Failed to delete exercise:', error);
+                          alert('Failed to delete exercise. Please try again.');
+                        }
                     }}
                     onDeleteSet={(exId, sId) => {
                         setSelectedWorkout(prev => prev ? { ...prev, exercises: prev.exercises.map(e => e.id === exId ? { ...e, sets: e.sets.filter(s => s.id !== sId) } : e) } : null);
@@ -467,8 +486,15 @@ export default function WorkoutPage() {
 
       <LogWorkoutModal
         isOpen={isLogWorkoutModalOpen}
-        onClose={() => { setIsLogWorkoutModalOpen(false); setIsAppendMode(false); }}
+        onClose={() => setIsLogWorkoutModalOpen(false)}
         onSubmit={handleLogWorkoutSubmit}
+      />
+      
+      <AddExerciseModal
+        isOpen={isAddExerciseModalOpen}
+        onClose={() => setIsAddExerciseModalOpen(false)}
+        onSubmit={handleAddExerciseSubmit}
+        existingExerciseIds={selectedWorkout?.exercises.map(ex => ex.exercise_id).filter(Boolean) as (string | number)[] || []}
       />
       
       {/* ERROR TOAST */}

@@ -134,12 +134,11 @@ export async function addPlannedExercises(payload: {
     exercise_id: string | number;
     planned_sets?: number;
     planned_reps?: number;
-  }>;
+  }>
 }) {
-  return apiFetch(`/workout-sessions`, {
+  return apiFetch(`/workouts/${payload.sessionId}/session-details`, {
     method: "POST",
     body: JSON.stringify({
-      session_id: payload.sessionId,
       exercises: payload.exercises,
     }),
   });
@@ -217,8 +216,8 @@ export async function deleteWorkoutSession(sessionId: string | number) {
   });
 }
 
-export async function deleteSessionDetail(sessionDetailId: string | number) {
-  return apiFetch(`/workout-sessions`, {
+export async function deleteSessionDetail(sessionId: string | number, sessionDetailId: string | number) {
+  return apiFetch(`/workouts/${sessionId}/session-details`, {
     method: "DELETE",
     body: JSON.stringify({ session_detail_id: sessionDetailId }),
   });

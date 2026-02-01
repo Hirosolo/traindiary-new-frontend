@@ -15,6 +15,7 @@ export interface ExerciseSet {
 
 export interface Exercise {
   id: string;
+  exercise_id?: string | number; // Actual exercise ID from database
   name: string;
   category?: string;
   lastPerformance?: string;
