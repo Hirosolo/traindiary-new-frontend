@@ -12,6 +12,7 @@ export default function SignInPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showVerifyLink, setShowVerifyLink] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -20,6 +21,7 @@ export default function SignInPage() {
       [name]: value,
     }));
     setError(''); // Clear error when user types
+    setShowVerifyLink(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +33,9 @@ export default function SignInPage() {
       await login(formData.email, formData.password);
       // Router push is handled in AuthContext
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(message);
+      setShowVerifyLink(message.toLowerCase().includes('not verified'));
     } finally {
       setIsLoading(false);
     }
@@ -86,6 +90,16 @@ export default function SignInPage() {
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded text-sm">
                 {error}
+                {showVerifyLink && (
+                  <div className="mt-2">
+                    <Link
+                      href={`/verify-email?email=${encodeURIComponent(formData.email)}`}
+                      className="text-white underline decoration-electric-blue/60 underline-offset-4"
+                    >
+                      Verify your email
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 

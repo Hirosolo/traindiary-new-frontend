@@ -30,8 +30,8 @@ export default function SignUpPage() {
     setError('');
 
     try {
-      await register(formData.fullName, formData.email, formData.password);
-      // Router push is handled in AuthContext after successful registration and login
+      await register(formData.fullName, formData.email, formData.password, formData.phone);
+      // Router push is handled in AuthContext after successful registration
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
     } finally {
@@ -137,6 +137,8 @@ export default function SignUpPage() {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="+1 (555) 000-0000"
+                required
+                minLength={10}
                 disabled={isLoading}
                 className="w-full bg-transparent border-0 border-b border-white/20 px-0 py-3 text-sm focus:ring-0 focus:border-electric-blue transition-all duration-300 placeholder:text-white/10 group-focus-within:!border-electric-blue disabled:opacity-50"
               />

@@ -15,7 +15,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (fullname: string, email: string, password: string, phone: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Protected routes that require authentication
   const protectedRoutes = ['/workout', '/nutrition', '/programs', '/summary', '/profile'];
-  const publicRoutes = ['/', '/signin', '/signup', '/forgot-password'];
+  const publicRoutes = ['/', '/signin', '/signup', '/forgot-password', '/verify-email'];
 
   useEffect(() => {
     // Check for stored token on mount
@@ -108,14 +108,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (fullname: string, email: string, password: string, phone: string) => {
     try {
       const response = await fetch(`${API_BASE}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ fullname, email, password, phone }),
       });
 
       const result = await response.json();
@@ -124,8 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(result.message || result.errors?.[0]?.message || "Registration failed");
       }
 
-      // After successful registration, automatically log in
-      await login(email, password);
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (error) {
       console.error("Registration error:", error);
       throw error;
