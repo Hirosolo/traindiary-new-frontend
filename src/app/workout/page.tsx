@@ -347,16 +347,27 @@ export default function WorkoutPage() {
       setIsAddExerciseModalOpen(true);
   };
 
-  const handleLogWorkoutSubmit = async (data: NewWorkoutSession) => {
+    const handleLogWorkoutSubmit = async (data: NewWorkoutSession) => {
       try {
-          const exercisesPayload = data.exercises.flatMap(ex => ex.reps.map(r => ({ exercise_id: ex.id, actual_sets: 1, actual_reps: r.rep, weight_kg: r.weight_kg ?? 0 })));
-          await createWorkoutSession({ userId, scheduledDate: data.date, type: data.type, notes: data.note, exercises: exercisesPayload });
-          await refreshSessions();
-          setIsLogWorkoutModalOpen(false);
+        const selected = new Date(data.date);
+        const isSameMonth = selected.getFullYear() === selectedYear && selected.getMonth() === selectedMonth;
+        if (isSameMonth) {
+          const dayKey = selected.getDate().toString();
+          const existingSessions = workoutSessions[dayKey] || [];
+          if (existingSessions.length > 0) {
+            setErrorMessage("Only one workout session is allowed per day.");
+            return;
+          }
+        }
+
+        const exercisesPayload = data.exercises.flatMap(ex => ex.reps.map(r => ({ exercise_id: ex.id, actual_sets: 1, actual_reps: r.rep, weight_kg: r.weight_kg ?? 0 })));
+        await createWorkoutSession({ userId, scheduledDate: data.date, type: data.type, notes: data.note, exercises: exercisesPayload });
+        await refreshSessions();
+        setIsLogWorkoutModalOpen(false);
       } catch (e) {
-          setErrorMessage("Failed to create session");
+        setErrorMessage("Failed to create session");
       }
-  };
+    };
 
   const handleAddExerciseSubmit = async (exercises: ExerciseToAdd[]) => {
       if (!selectedWorkout) return;
@@ -385,7 +396,10 @@ export default function WorkoutPage() {
           grScore={grScore}
           grScoreChange={grScoreChange}
           muscleSplit={muscleSplit}
-          onLogWorkout={() => setIsLogWorkoutModalOpen(true)}
+          onLogWorkout={() => {
+            setErrorMessage(null);
+            setIsLogWorkoutModalOpen(true);
+          }}
         />
 
         <div className="flex-1 flex flex-col bg-background-dark relative">
