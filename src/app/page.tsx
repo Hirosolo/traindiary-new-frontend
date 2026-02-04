@@ -17,6 +17,7 @@ import {
   StaggerOnScroll,
   BlurInOnScroll,
 } from "@/components/ui/scroll-animation";
+import AIChatBox from "@/components/chat-box/AIChatBox";
 
 export default function LandingPage() {
   const [showWelcome, setShowWelcome] = useState(true);
@@ -319,6 +320,8 @@ export default function LandingPage() {
           </div>
         </FadeInOnScroll>
       </footer>
+      {/* AI Chat Box */}
+      <AIChatBox />
       </ClickSpark>
     </>
   );
