@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { motion, useScroll, useMotionValueEvent } from "motion/react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,15 +64,15 @@ export default function NavBar({
     >
       <div className="max-w-[1440px] mx-auto px-6 md:px-8 h-16 md:h-20 flex items-center justify-between">
         <div className="flex items-center gap-12">
-          <a
+          <Link
             className="text-xl md:text-2xl font-bold font-display tracking-architectural"
             href="/"
           >
             {brand}
-          </a>
+          </Link>
           <div className="hidden lg:flex items-center gap-8">
             {items.map((item) => (
-              <a
+              <Link
                 key={item.name}
                 className={cn(
                   "text-[11px] font-bold uppercase tracking-widest transition-colors pb-1",
@@ -82,7 +83,7 @@ export default function NavBar({
                 href={getHref(item.link)}
               >
                 {item.name}
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -91,13 +92,13 @@ export default function NavBar({
             search
           </button>
           {!user ? (
-            <a href="/signin" className="hidden sm:block bg-white text-black text-[11px] font-bold px-6 py-2 uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
+            <Link href="/signin" className="hidden sm:block bg-white text-black text-[11px] font-bold px-6 py-2 uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
               Join Now
-            </a>
+            </Link>
           ) : (
-            <a href="/profile" aria-label="Open profile" className="hidden sm:flex items-center justify-center h-9 w-9 rounded-full bg-white/10 ring-1 ring-white/10 hover:ring-primary/50 transition-all overflow-hidden">
+            <Link href="/profile" aria-label="Open profile" className="hidden sm:flex items-center justify-center h-9 w-9 rounded-full bg-white/10 ring-1 ring-white/10 hover:ring-primary/50 transition-all overflow-hidden">
               <span className="material-symbols-outlined text-white text-[18px]">account_circle</span>
-            </a>
+            </Link>
           )}
           <button
             className="lg:hidden flex items-center cursor-pointer"
@@ -129,7 +130,7 @@ export default function NavBar({
           </div>
           <div className="flex flex-col gap-8">
             {items.map((item) => (
-              <a
+              <Link
                 key={`mobile-${item.name}`}
                 className={cn(
                   "flex items-center gap-4 text-3xl font-bold font-display uppercase tracking-tight border-b pb-4 transition-colors",
@@ -149,18 +150,18 @@ export default function NavBar({
                   </span>
                 )}
                 {item.name}
-              </a>
+              </Link>
             ))}
           </div>
           <div className="mt-auto pb-8">
             {!user ? (
-              <a href="/signin" className="block w-full text-center bg-white text-black py-5 font-bold uppercase tracking-widest">
+              <Link href="/signin" className="block w-full text-center bg-white text-black py-5 font-bold uppercase tracking-widest">
                 Join The Movement
-              </a>
+              </Link>
             ) : (
-              <a href="/profile" className="block w-full text-center bg-white text-black py-5 font-bold uppercase tracking-widest">
+              <Link href="/profile" className="block w-full text-center bg-white text-black py-5 font-bold uppercase tracking-widest">
                 Profile
-              </a>
+              </Link>
             )}
           </div>
         </div>

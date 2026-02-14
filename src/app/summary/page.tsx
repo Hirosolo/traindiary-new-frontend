@@ -7,6 +7,32 @@ import { CalendarLume } from "@/components/ui/calendar-lume";
 import NavBar from "@/components/ui/navbar";
 import { CircularProgress } from "@/components/ui/circular-progress";
 
+type WorkoutExerciseData = {
+  name: string;
+  count: number;
+  volume: number;
+};
+
+type ExerciseLog = {
+  actual_sets?: number;
+  actual_reps?: number;
+  weight_kg?: number;
+};
+
+type Exercise = {
+  name?: string;
+};
+
+type SessionDetail = {
+  exercise_id: number;
+  exercises?: Exercise;
+  exercise_logs?: ExerciseLog[];
+};
+
+type WorkoutSession = {
+  session_details?: SessionDetail[];
+};
+
 type SummaryPoint = {
   label: string;
   dateLabel: string;
@@ -60,7 +86,7 @@ export default function SummaryPage() {
   const [nutritionGraphType, setNutritionGraphType] = useState<"all" | "hydration">("all");
   const [selectedExercise, setSelectedExercise] = useState<string>("");
   const [userId, setUserId] = useState<number | null>(null);
-  const [workoutData, setWorkoutData] = useState<any[]>([]);
+  const [workoutData, setWorkoutData] = useState<WorkoutExerciseData[]>([]);
   const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(false);
   
   const dataset = useMemo(() => buildMonthlyData(selectedYear, selectedMonth), [selectedMonth, selectedYear]);
@@ -105,18 +131,18 @@ export default function SummaryPage() {
           );
           if (response.ok) {
             const sessions = await response.json();
-            const exerciseMap: Record<string, { name: string; count: number; volume: number }> = {};
+            const exerciseMap: Record<string, WorkoutExerciseData> = {};
             
             const sessionsArray = Array.isArray(sessions) ? sessions : sessions.sessions || [];
-            sessionsArray.forEach((session: any) => {
+            (sessionsArray as WorkoutSession[]).forEach((session) => {
               if (session.session_details && Array.isArray(session.session_details)) {
-                session.session_details.forEach((detail: any) => {
+                session.session_details.forEach((detail) => {
                   const exerciseName = detail.exercises?.name || `Exercise ${detail.exercise_id}`;
                   if (!exerciseMap[exerciseName]) {
                     exerciseMap[exerciseName] = { name: exerciseName, count: 0, volume: 0 };
                   }
                   if (detail.exercise_logs && Array.isArray(detail.exercise_logs)) {
-                    detail.exercise_logs.forEach((log: any) => {
+                    detail.exercise_logs.forEach((log) => {
                       exerciseMap[exerciseName].count += 1;
                       exerciseMap[exerciseName].volume += (log.actual_sets || 0) * (log.actual_reps || 0) * (log.weight_kg || 0);
                     });

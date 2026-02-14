@@ -34,6 +34,17 @@ import {
 } from "@/lib/api/workouts";
 import { motion, AnimatePresence } from "framer-motion";
 
+type MuscleSplit = {
+  name: string;
+  value: number;
+  color: string;
+};
+
+type ApiMuscleSplit = {
+  name: string;
+  value: number;
+};
+
 export default function WorkoutPage() {
   const { user } = useAuth();
   const userId = user?.user_id ?? user?.id ?? 1;
@@ -54,7 +65,7 @@ export default function WorkoutPage() {
 
   const [grScore, setGrScore] = useState(0);
   const [grScoreChange, setGrScoreChange] = useState(0);
-  const [muscleSplit, setMuscleSplit] = useState<any[]>([
+  const [muscleSplit, setMuscleSplit] = useState<MuscleSplit[]>([
     { name: 'Legs', value: 40, color: '#3b82f6' },
     { name: 'Push', value: 35, color: '#ef4444' },
     { name: 'Pull', value: 25, color: '#10b981' },
@@ -232,7 +243,7 @@ export default function WorkoutPage() {
     try {
       const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
       const response = await fetchWorkoutSessions(userId, monthParam);
-      const sessionsArray = Array.isArray(response) ? response : (response as any).sessions || [];
+      const sessionsArray = Array.isArray(response) ? response : (response as { sessions: ApiWorkoutSession[] }).sessions || [];
       setWorkoutSessions(mapSessionsToDays(sessionsArray));
 
       // Fetch Dashboard Stats
@@ -248,7 +259,7 @@ export default function WorkoutPage() {
             'Legs': '#3b82f6', 'Push': '#ef4444', 'Pull': '#10b981',
             'Chest': '#ec4899', 'Back': '#8b5cf6', 'Arms': '#f59e0b'
           };
-          const split = summary.muscle_split.map((m: any) => ({
+          const split = (summary.muscle_split as ApiMuscleSplit[]).map((m) => ({
               ...m,
               color: colors[m.name] || '#64748b'
           }));
@@ -283,7 +294,7 @@ export default function WorkoutPage() {
     }
   };
 
-  const handleUpdateSet = (exerciseId: string, setId: string, field: string, value: any) => {
+  const handleUpdateSet = (exerciseId: string, setId: string, field: string, value: number | boolean | undefined) => {
     if (!selectedWorkout) return;
     const updated = {
       ...selectedWorkout,

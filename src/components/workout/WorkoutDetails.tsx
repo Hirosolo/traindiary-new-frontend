@@ -180,7 +180,7 @@ export default function WorkoutDetails({
               </h1>
               {workout.note && (
                 <p className="mt-4 text-sm text-text-dim leading-relaxed border-l-2 border-white/10 pl-4 py-1 italic">
-                  "{workout.note}"
+                  &ldquo;{workout.note}&rdquo;
                 </p>
               )}
             </header>

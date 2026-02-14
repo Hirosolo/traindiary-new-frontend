@@ -97,17 +97,19 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+type PayloadData = Record<string, unknown>;
+
 type ChartTooltipContentProps = React.ComponentProps<"div"> & {
   active?: boolean;
   payload?: Array<{
     name?: string;
     dataKey?: string;
     value?: number;
-    payload?: any;
+    payload?: PayloadData;
     color?: string;
   }>;
   label?: string | number | React.ReactNode;
-  labelFormatter?: (value: any, payload?: any) => React.ReactNode;
+  labelFormatter?: (value: React.ReactNode, payload?: Array<{ payload?: PayloadData }>) => React.ReactNode;
   labelClassName?: string;
   formatter?: (
     value: number,
@@ -116,11 +118,11 @@ type ChartTooltipContentProps = React.ComponentProps<"div"> & {
       name?: string;
       dataKey?: string;
       value?: number;
-      payload?: any;
+      payload?: PayloadData;
       color?: string;
     },
     index: number,
-    payload: any,
+    payload: PayloadData,
   ) => React.ReactNode;
   color?: string;
   nameKey?: string;
@@ -191,7 +193,7 @@ function ChartTooltipContent({
         {payload.map((item, index) => {
           const key = `${nameKey || item.name || item.dataKey || "value"}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
-          const indicatorColor = color || item.payload.fill || item.color;
+          const indicatorColor = color || item.payload?.fill || item.color;
 
           return (
             <div
@@ -202,7 +204,7 @@ function ChartTooltipContent({
               )}
             >
               {formatter && item?.value !== undefined && item.name ? (
-                formatter(item.value, item.name, item, index, item.payload)
+                formatter(item.value, item.name, item, index, item.payload || {})
               ) : (
                 <>
                   {itemConfig?.icon ? (
