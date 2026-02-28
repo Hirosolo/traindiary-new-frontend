@@ -66,9 +66,6 @@ export default function WorkoutPage() {
   const [grScore, setGrScore] = useState(0);
   const [grScoreChange, setGrScoreChange] = useState(0);
   const [muscleSplit, setMuscleSplit] = useState<MuscleSplit[]>([
-    { name: 'Legs', value: 40, color: '#3b82f6' },
-    { name: 'Push', value: 35, color: '#ef4444' },
-    { name: 'Pull', value: 25, color: '#10b981' },
   ]);
 
   const [workoutSessions, setWorkoutSessions] = useState<Record<string, WorkoutSession[]>>({});
