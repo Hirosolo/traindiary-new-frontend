@@ -19,7 +19,6 @@ export interface NewMealSession {
     quantity?: number;
     unit?: string;
     food_id?: number;
-    grams_per_serving?: number;
   }>;
   notes?: string;
 }
@@ -33,12 +32,11 @@ interface Food {
   fiber?: number;
   calories?: number;
   servingSize?: string;
-  grams_per_serving?: number;
+  unit_type?: string;
 }
 
 interface SelectedFood extends Food {
   servings: number;
-  displayAmount: number; // calculated: servings * grams_per_serving
 }
 
 interface LogMealModalProps {
@@ -110,7 +108,7 @@ export default function LogMealModal({ isOpen, onClose, onSubmit }: LogMealModal
   const handleBack = () => setStep(s => s - 1);
 
   const handleAddFood = (food: Food) => {
-    setSelectedFoods([...selectedFoods, { ...food, servings: 1, displayAmount: food.grams_per_serving ?? 100 }]);
+    setSelectedFoods([...selectedFoods, { ...food, servings: 1 }]);
   };
 
   const handleRemoveFood = (id: string | number) => {
@@ -118,13 +116,9 @@ export default function LogMealModal({ isOpen, onClose, onSubmit }: LogMealModal
   };
 
   const updateServings = (id: string | number, val: number) => {
-    setSelectedFoods(selectedFoods.map(f => {
-        if (f.id === id) {
-            const grams = f.grams_per_serving ?? 100;
-            return { ...f, servings: val, displayAmount: val * grams };
-        }
-        return f;
-    }));
+    setSelectedFoods(selectedFoods.map(f =>
+      f.id === id ? { ...f, servings: val } : f
+    ));
   };
 
   const handleFinalSubmit = () => {
@@ -139,7 +133,6 @@ export default function LogMealModal({ isOpen, onClose, onSubmit }: LogMealModal
               name: f.name,
               food_id: Number(f.id),
               quantity: f.servings,
-              grams_per_serving: f.grams_per_serving
           })),
           notes
       });
@@ -234,7 +227,7 @@ export default function LogMealModal({ isOpen, onClose, onSubmit }: LogMealModal
                           >
                              <div className="text-left">
                                 <p className="text-lg font-display font-bold text-white uppercase italic tracking-tighter">{f.name}</p>
-                                <p className="text-[10px] font-bold text-text-dim uppercase mt-1">{f.calories} KCAL per {f.grams_per_serving ?? 100}G</p>
+                                 <p className="text-[10px] font-bold text-text-dim uppercase mt-1">{f.calories} KCAL per 1 {f.unit_type ?? f.servingSize ?? "unit"}</p>
                              </div>
                              <span className="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity">add_circle</span>
                           </button>
@@ -263,8 +256,8 @@ export default function LogMealModal({ isOpen, onClose, onSubmit }: LogMealModal
                        <div key={f.id} className="bg-surface-card border border-white/5 p-8 rounded-[2rem] flex flex-col sm:flex-row items-center gap-8">
                           <div className="flex-1 text-center sm:text-left">
                              <h4 className="text-2xl font-display font-bold uppercase italic tracking-tighter text-white">{f.name}</h4>
-                             <p className="text-[10px] font-bold text-text-dim uppercase tracking-widest mt-2">Displaying: {f.displayAmount}G (BASE: {f.grams_per_serving ?? 100}G)</p>
-                          </div>
+                             <p className="text-[10px] font-bold text-text-dim uppercase tracking-widest mt-2">UNIT: {f.unit_type ?? f.servingSize ?? "unit"}</p>
+                           </div>
                           <div className="flex items-center gap-6">
                              <div className="flex items-center gap-3">
                                 <button onClick={() => updateServings(f.id, Math.max(0.5, f.servings - 0.5))} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center"><span className="material-symbols-outlined">remove</span></button>
@@ -298,7 +291,7 @@ export default function LogMealModal({ isOpen, onClose, onSubmit }: LogMealModal
                       {selectedFoods.map(f => (
                           <div key={f.id} className="flex justify-between items-center px-4 py-3 border-b border-white/5">
                              <span className="font-bold uppercase tracking-tight">{f.name}</span>
-                             <span className="text-[10px] font-black text-text-dim">{f.servings} SERVINGS • {f.displayAmount}G</span>
+                              <span className="text-[10px] font-black text-text-dim">{f.servings} {f.unit_type ?? f.servingSize ?? "units"}</span>
                           </div>
                       ))}
                    </div>

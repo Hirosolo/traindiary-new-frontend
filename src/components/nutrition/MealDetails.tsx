@@ -4,20 +4,6 @@ import { useState } from "react";
 import type { FoodItem } from "@/lib/api/nutrition";
 import type { Meal } from "@/components/nutrition/MealCalendar";
 
-/** Weight-based "100 g" + 1.5 → "150g"; else "1.5 piece", "1.5 slice", etc. */
-function formatServingLabel(numbersOfServing: number | undefined, servingType: string | undefined): string {
-  if (numbersOfServing == null) return servingType ?? "—";
-  const n = Number(numbersOfServing);
-  if (!servingType?.trim()) return "—";
-  const st = servingType.trim();
-  const weightMatch = st.match(/^(\d+(?:\.\d+)?)\s*g\s*$/i) || st.match(/^(\d+(?:\.\d+)?)\s*g$/i);
-  if (weightMatch) {
-    const gramsPerServing = parseFloat(weightMatch[1]);
-    const totalG = n * gramsPerServing;
-    return `${Math.round(totalG) === totalG ? totalG : totalG.toFixed(1)}g`;
-  }
-  return `${n} ${st}`;
-}
 
 /** Food item with either API totals (total_*) or per-serving values for display */
 type MealFoodItem = FoodItem | (FoodItem & {
@@ -260,34 +246,26 @@ export default function MealDetails({
               <div className="space-y-4">
                 {(meal.foodItems as MealFoodItem[]).map((food, idx) => {
                   const hasTotals = "total_calories" in food && food.total_calories != null;
-                  const mult = (() => {
-                    if (hasTotals) return 1;
-                    const st = food.serving_type || "100g";
-                    let g = 100;
-                    const m = st.match(/^(\d+(?:\.\d+)?)\s*g$/i);
-                    if (m) g = parseFloat(m[1]);
-                    return (food.amount_grams ?? g) / g;
-                  })();
+                  const mult = hasTotals ? 1 : (food as any).numbers_of_serving ?? 1;
                   const calories = hasTotals ? (food.total_calories ?? 0) : (food.calories_per_serving ?? 0) * mult;
                   const protein = hasTotals ? (food.total_protein ?? 0) : (food.protein_per_serving ?? 0) * mult;
                   const carbs = hasTotals ? (food.total_carbs ?? 0) : (food.carbs_per_serving ?? 0) * mult;
                   const fats = hasTotals ? (food.total_fat ?? 0) : (food.fat_per_serving ?? 0) * mult;
-                  const fiber = hasTotals ? (food.total_fiber ?? 0) : (food.fiber ?? 0) * mult;
-                  const sugars = hasTotals ? (food.total_sugars ?? 0) : undefined;
-                  const zinc = hasTotals ? (food.total_zincs ?? 0) : undefined;
-                  const magnesium = hasTotals ? (food.total_magnesiums ?? 0) : undefined;
-                  const calcium = hasTotals ? (food.total_calciums ?? 0) : undefined;
-                  const iron = hasTotals ? (food.total_irons ?? 0) : undefined;
-                  const vitA = hasTotals ? (food.total_vitamin_a ?? 0) : undefined;
-                  const vitC = hasTotals ? (food.total_vitamin_c ?? 0) : undefined;
-                  const vitB12 = hasTotals ? (food.total_vitamin_b12 ?? 0) : undefined;
-                  const vitD = hasTotals ? (food.total_vitamin_d ?? 0) : undefined;
+                  const fiber = hasTotals ? ((food as any).total_fiber ?? 0) : ((food as any).fiber ?? 0) * mult;
+                  const sugars = hasTotals ? ((food as any).total_sugars ?? 0) : undefined;
+                  const zinc = hasTotals ? ((food as any).total_zincs ?? 0) : undefined;
+                  const magnesium = hasTotals ? ((food as any).total_magnesiums ?? 0) : undefined;
+                  const calcium = hasTotals ? ((food as any).total_calciums ?? 0) : undefined;
+                  const iron = hasTotals ? ((food as any).total_irons ?? 0) : undefined;
+                  const vitA = hasTotals ? ((food as any).total_vitamin_a ?? 0) : undefined;
+                  const vitC = hasTotals ? ((food as any).total_vitamin_c ?? 0) : undefined;
+                  const vitB12 = hasTotals ? ((food as any).total_vitamin_b12 ?? 0) : undefined;
+                  const vitD = hasTotals ? ((food as any).total_vitamin_d ?? 0) : undefined;
 
-                  const servingLabel = "numbers_of_serving" in food && food.serving_type
-                    ? formatServingLabel(food.numbers_of_serving, food.serving_type)
-                    : food.serving_type
-                      ? `${food.amount_grams ?? "—"}g (${food.serving_type})`
-                      : `${food.amount_grams ?? "—"}g`;
+                  const unitType = (food as any).unit_type;
+                  const servingLabel = "numbers_of_serving" in food && food.numbers_of_serving != null && unitType
+                    ? `${food.numbers_of_serving} ${unitType}`
+                    : unitType ?? "—";
 
                   const fmt = (v: number | undefined, unit = "g") =>
                     v != null ? `${typeof v === "number" && v % 1 !== 0 ? v.toFixed(2) : Math.round(v)}${unit}` : "—";

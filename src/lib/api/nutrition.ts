@@ -176,7 +176,7 @@ export interface MealDetailFood {
   meal_detail_id: number;
   food_id: number;
   food_name: string;
-  serving_type: string;
+  unit_type: string;
   image: string | null;
   numbers_of_serving: number;
   total_calories: number;
@@ -219,13 +219,13 @@ export interface FoodItem {
   meal_detail_id?: number;
   food_id?: number;
   name: string;
-  amount_grams: number;
+  numbers_of_serving?: number;
   calories_per_serving: number;
   protein_per_serving: number;
   carbs_per_serving: number;
   fat_per_serving: number;
   fiber?: number;
-  serving_type?: string;
+  unit_type?: string;
   image?: string;
 }
 
@@ -243,13 +243,13 @@ export async function fetchMealFoodItems(mealId: string | number): Promise<FoodI
       meal_detail_id: item.meal_detail_id,
       food_id: item.food?.food_id || item.food_id,
       name: item.food?.name || item.name || "Unknown Food",
-      amount_grams: item.amount_grams || 100,
+      numbers_of_serving: item.numbers_of_serving || 1,
       calories_per_serving: item.food?.calories_per_serving || 0,
       protein_per_serving: item.food?.protein_per_serving || 0,
       carbs_per_serving: item.food?.carbs_per_serving || 0,
       fat_per_serving: item.food?.fat_per_serving || 0,
       fiber: item.food?.fiber || 0,
-      serving_type: item.food?.serving_type || "100g",
+      unit_type: item.food?.unit_type || "unit",
       image: item.food?.image,
     }));
   } catch (error) {
@@ -360,7 +360,7 @@ export async function fetchFoods(searchQuery?: string): Promise<Array<{
   fiber?: number;
   calories?: number;
   servingSize?: string;
-  grams_per_serving?: number;
+  unit_type?: string;
 }>> {
   try {
     const query = searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : "";
@@ -373,42 +373,21 @@ export async function fetchFoods(searchQuery?: string): Promise<Array<{
       fat_per_serving?: number;
       fiber?: number;
       calories_per_serving?: number;
-      serving_type?: string;
-      grams_per_serving?: number;
+      unit_type?: string;
     }>>(`/foods${query}`);
     
     // Transform API response to component format
-    // Calculate grams_per_serving from serving_type or use API value
-    return response.map((item) => {
-      const servingType = item.serving_type ?? "100g";
-      
-      // Priority: Use API grams_per_serving if provided
-      let gramsPerServing = item.grams_per_serving;
-      
-      if (!gramsPerServing) {
-        // Try to extract number from serving_type (e.g., "50g", "100g", "80g")
-        const gramsMatch = servingType.match(/^(\d+(?:\.\d+)?)\s*g$/i);
-        if (gramsMatch) {
-          // serving_type ends with 'g' and has a number
-          gramsPerServing = parseFloat(gramsMatch[1]);
-        } else {
-          // For non-gram units (piece, bagel, egg, etc.), default to 1
-          gramsPerServing = 1;
-        }
-      }
-      
-      return {
-        id: item.food_id ?? item.id ?? item.name,
-        name: item.name,
-        protein: item.protein_per_serving ?? 0,
-        carbs: item.carbs_per_serving ?? 0,
-        fats: item.fat_per_serving ?? 0,
-        fiber: item.fiber ?? 0,
-        calories: item.calories_per_serving ?? 0,
-        servingSize: servingType,
-        grams_per_serving: gramsPerServing,
-      };
-    });
+    return response.map((item) => ({
+      id: item.food_id ?? item.id ?? item.name,
+      name: item.name,
+      protein: item.protein_per_serving ?? 0,
+      carbs: item.carbs_per_serving ?? 0,
+      fats: item.fat_per_serving ?? 0,
+      fiber: item.fiber ?? 0,
+      calories: item.calories_per_serving ?? 0,
+      servingSize: item.unit_type ?? "unit",
+      unit_type: item.unit_type,
+    }));
   } catch (error) {
     console.warn("Failed to fetch foods from API", error);
     return [];

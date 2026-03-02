@@ -21,20 +21,6 @@ import {
 import { fetchSummary } from "@/lib/api/workouts"; // Summary includes nutrition
 import { motion, AnimatePresence } from "framer-motion";
 
-/** Format serving: weight-based "100 g" + 1.5 → "150g"; else "1.5 piece", "1.5 slice", etc. */
-function formatServingLabel(numbersOfServing: number | undefined, servingType: string | undefined): string {
-  if (numbersOfServing == null) return servingType ?? "—";
-  const n = Number(numbersOfServing);
-  if (!servingType?.trim()) return "—";
-  const st = servingType.trim();
-  const weightMatch = st.match(/^(\d+(?:\.\d+)?)\s*g\s*$/i) || st.match(/^(\d+(?:\.\d+)?)\s*g$/i);
-  if (weightMatch) {
-    const gramsPerServing = parseFloat(weightMatch[1]);
-    const totalG = n * gramsPerServing;
-    return `${Math.round(totalG) === totalG ? totalG : totalG.toFixed(1)}g`;
-  }
-  return `${n} ${st}`;
-}
 
 const NUTRITION_LABELS: { key: string; label: string }[] = [
   { key: "total_calories", label: "Calories" },
@@ -177,7 +163,7 @@ export default function NutritionPage() {
                   meal_detail_id: f.meal_detail_id,
                   food_id: f.food_id,
                   name: f.food_name,
-                  serving_type: f.serving_type,
+                  unit_type: f.unit_type,
                   image: f.image,
                   numbers_of_serving: f.numbers_of_serving,
                   total_calories: f.total_calories,
@@ -374,7 +360,9 @@ export default function NutritionPage() {
 
                                     <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 no-scrollbar">
                                         {items.map((i: any) => {
-                                            const servingLabel = formatServingLabel(i.numbers_of_serving, i.serving_type) || i.amount || "—";
+                                            const servingLabel = (i.numbers_of_serving != null && i.unit_type)
+                                              ? `${i.numbers_of_serving} ${i.unit_type}`
+                                              : i.unit_type ?? i.amount ?? "—";
                                             return (
                                                 <div key={i.id} className="bg-white/5 p-5 rounded-2xl border border-white/5">
                                                     <div className="flex justify-between items-start mb-3">
