@@ -43,6 +43,7 @@ interface LogMealModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (meal: NewMealSession) => Promise<void> | void;
+  targetDate: Date;
 }
 
 const MEAL_TYPE_ICONS: Record<string, string> = {
@@ -53,7 +54,7 @@ const MEAL_TYPE_ICONS: Record<string, string> = {
   "Other": "restaurant",
 };
 
-export default function LogMealModal({ isOpen, onClose, onSubmit }: LogMealModalProps) {
+export default function LogMealModal({ isOpen, onClose, onSubmit, targetDate }: LogMealModalProps) {
   const [step, setStep] = useState(1);
   const [mealType, setMealType] = useState("Breakfast");
   const [notes, setNotes] = useState("");
@@ -125,7 +126,7 @@ export default function LogMealModal({ isOpen, onClose, onSubmit }: LogMealModal
       const now = new Date();
       onSubmit({
           mealType,
-          date: now.toISOString().split('T')[0],
+          date: targetDate.toISOString().split('T')[0],
           time: now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
           name: selectedFoods.length > 1 ? `${selectedFoods[0].name} +${selectedFoods.length-1}` : selectedFoods[0].name,
           ...totals,
@@ -160,7 +161,13 @@ export default function LogMealModal({ isOpen, onClose, onSubmit }: LogMealModal
         <div className="p-8 lg:p-12 flex flex-col h-full overflow-y-auto">
           <header className="flex justify-between items-start mb-10">
             <div>
-              <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Step 0{step} of 04</span>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Step 0{step} of 04</span>
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">&mdash;</span>
+                <span className="text-[10px] font-black text-white/60 uppercase tracking-[0.3em]">
+                  {targetDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase()}
+                </span>
+              </div>
               <h2 className="text-3xl lg:text-4xl font-display font-bold text-white uppercase italic tracking-tighter mt-1">
                 {step === 1 && "Initialization"}
                 {step === 2 && "Database Search"}

@@ -286,9 +286,11 @@ export default function NutritionPage() {
 
       {/* MODALS */}
       <LogMealModal 
+        key={selectedDate.toDateString()}
         isOpen={isLogModalOpen} 
         onClose={() => setIsLogModalOpen(false)} 
-        onSubmit={handleCreateMeal} 
+        onSubmit={handleCreateMeal}
+        targetDate={selectedDate}
       />
 
       <AnimatePresence>
