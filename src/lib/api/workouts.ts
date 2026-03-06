@@ -238,8 +238,62 @@ export async function deleteExerciseLog(logId: string | number) {
   });
 }
 
+const EXERCISES_VERSION_KEY = 'exercises_version';
+const EXERCISES_DATA_KEY = 'exercises_data';
+
+function getTodayVersion(): string {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yyyy = String(now.getFullYear());
+  return `${dd}${mm}${yyyy}`;
+}
+
 export async function fetchExercises(): Promise<ApiExercise[]> {
-  return apiFetch<ApiExercise[]>(`/exercises`);
+  if (typeof window === 'undefined') {
+    return apiFetch<ApiExercise[]>(`/exercises`);
+  }
+
+  const todayVersion = getTodayVersion();
+  const storedVersion = localStorage.getItem(EXERCISES_VERSION_KEY);
+  const storedData = localStorage.getItem(EXERCISES_DATA_KEY);
+
+  // Cache hit: version matches today, return cached data without any request
+  if (storedVersion === todayVersion && storedData) {
+    try {
+      return JSON.parse(storedData) as ApiExercise[];
+    } catch {
+      // corrupted cache — fall through to fetch
+    }
+  }
+
+  // Cache miss or stale: ask backend, passing our stored version
+  const params = storedVersion ? `?version=${storedVersion}` : '';
+  const result = await apiFetch<{ changed: 0 | 1; version: string; data?: ApiExercise[] }>(`/exercises${params}`);
+
+  if (result.changed === 1 && result.data) {
+    // Data changed: persist both new version and new data
+    localStorage.setItem(EXERCISES_VERSION_KEY, result.version);
+    localStorage.setItem(EXERCISES_DATA_KEY, JSON.stringify(result.data));
+    return result.data;
+  } else {
+    // Data unchanged: only update the version stamp
+    localStorage.setItem(EXERCISES_VERSION_KEY, result.version);
+    // Return whatever we have cached; if cache is empty fall back to a forced fetch
+    if (storedData) {
+      try {
+        return JSON.parse(storedData) as ApiExercise[];
+      } catch { /* fall through */ }
+    }
+    // Edge case: no cached data but server says unchanged — force a full fetch
+    const fallback = await apiFetch<{ changed: 0 | 1; version: string; data?: ApiExercise[] }>(`/exercises`);
+    if (fallback.data) {
+      localStorage.setItem(EXERCISES_VERSION_KEY, fallback.version);
+      localStorage.setItem(EXERCISES_DATA_KEY, JSON.stringify(fallback.data));
+      return fallback.data;
+    }
+    return [];
+  }
 }
 
 const BASIC_WORKOUT_TYPES = ["Push", "Pull", "Legs", "Cardio", "Full Body"];

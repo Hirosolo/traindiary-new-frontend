@@ -351,6 +351,44 @@ export async function fetchMealTypes(): Promise<string[]> {
   return ["Breakfast", "Lunch", "Dinner", "Snack", "Pre-Workout", "Post-Workout"];
 }
 
+const FOODS_VERSION_KEY = 'foods_version';
+const FOODS_DATA_KEY = 'foods_data';
+
+function getTodayVersion(): string {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yyyy = String(now.getFullYear());
+  return `${dd}${mm}${yyyy}`;
+}
+
+/** Raw food shape returned by GET /foods */
+interface RawFood {
+  food_id?: string | number;
+  id?: string | number;
+  name: string;
+  protein_per_serving?: number;
+  carbs_per_serving?: number;
+  fat_per_serving?: number;
+  fiber?: number;
+  calories_per_serving?: number;
+  unit_type?: string;
+}
+
+function mapRawFood(item: RawFood) {
+  return {
+    id: item.food_id ?? item.id ?? item.name,
+    name: item.name,
+    protein: item.protein_per_serving ?? 0,
+    carbs: item.carbs_per_serving ?? 0,
+    fats: item.fat_per_serving ?? 0,
+    fiber: item.fiber ?? 0,
+    calories: item.calories_per_serving ?? 0,
+    servingSize: item.unit_type ?? 'unit',
+    unit_type: item.unit_type,
+  };
+}
+
 export async function fetchFoods(searchQuery?: string): Promise<Array<{
   id: string | number;
   name: string;
@@ -363,33 +401,60 @@ export async function fetchFoods(searchQuery?: string): Promise<Array<{
   unit_type?: string;
 }>> {
   try {
-    const query = searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : "";
-    const response = await apiFetch<Array<{
-      food_id?: string | number;
-      id?: string | number;
-      name: string;
-      protein_per_serving?: number;
-      carbs_per_serving?: number;
-      fat_per_serving?: number;
-      fiber?: number;
-      calories_per_serving?: number;
-      unit_type?: string;
-    }>>(`/foods${query}`);
-    
-    // Transform API response to component format
-    return response.map((item) => ({
-      id: item.food_id ?? item.id ?? item.name,
-      name: item.name,
-      protein: item.protein_per_serving ?? 0,
-      carbs: item.carbs_per_serving ?? 0,
-      fats: item.fat_per_serving ?? 0,
-      fiber: item.fiber ?? 0,
-      calories: item.calories_per_serving ?? 0,
-      servingSize: item.unit_type ?? "unit",
-      unit_type: item.unit_type,
-    }));
+    // Search queries bypass the cache — results are filtered and not the full list
+    if (searchQuery) {
+      const query = `?search=${encodeURIComponent(searchQuery)}`;
+      const response = await apiFetch<RawFood[]>(`/foods${query}`);
+      return response.map(mapRawFood);
+    }
+
+    if (typeof window === 'undefined') {
+      const response = await apiFetch<RawFood[]>(`/foods`);
+      return response.map(mapRawFood);
+    }
+
+    const todayVersion = getTodayVersion();
+    const storedVersion = localStorage.getItem(FOODS_VERSION_KEY);
+    const storedData = localStorage.getItem(FOODS_DATA_KEY);
+
+    // Cache hit: version matches today, return parsed cached data
+    if (storedVersion === todayVersion && storedData) {
+      try {
+        return JSON.parse(storedData);
+      } catch {
+        // corrupted — fall through to fetch
+      }
+    }
+
+    // Cache miss or stale: ask backend, passing our stored version
+    const params = storedVersion ? `?version=${storedVersion}` : '';
+    const result = await apiFetch<{ changed: 0 | 1; version: string; data?: RawFood[] }>(`/foods${params}`);
+
+    if (result.changed === 1 && result.data) {
+      const mapped = result.data.map(mapRawFood);
+      localStorage.setItem(FOODS_VERSION_KEY, result.version);
+      localStorage.setItem(FOODS_DATA_KEY, JSON.stringify(mapped));
+      return mapped;
+    } else {
+      // Data unchanged: only update the version stamp
+      localStorage.setItem(FOODS_VERSION_KEY, result.version);
+      if (storedData) {
+        try {
+          return JSON.parse(storedData);
+        } catch { /* fall through */ }
+      }
+      // Edge case: no cached data but server says unchanged — force a full fetch
+      const fallback = await apiFetch<{ changed: 0 | 1; version: string; data?: RawFood[] }>(`/foods`);
+      if (fallback.data) {
+        const mapped = fallback.data.map(mapRawFood);
+        localStorage.setItem(FOODS_VERSION_KEY, fallback.version);
+        localStorage.setItem(FOODS_DATA_KEY, JSON.stringify(mapped));
+        return mapped;
+      }
+      return [];
+    }
   } catch (error) {
-    console.warn("Failed to fetch foods from API", error);
+    console.warn('Failed to fetch foods from API', error);
     return [];
   }
 }
