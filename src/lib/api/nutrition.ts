@@ -401,7 +401,7 @@ export async function fetchFoods(searchQuery?: string): Promise<Array<{
   unit_type?: string;
 }>> {
   try {
-    // Search queries bypass the cache — results are filtered and not the full list
+    // Search queries bypass the cache
     if (searchQuery) {
       const query = `?search=${encodeURIComponent(searchQuery)}`;
       const response = await apiFetch<RawFood[]>(`/foods${query}`);
@@ -409,49 +409,51 @@ export async function fetchFoods(searchQuery?: string): Promise<Array<{
     }
 
     if (typeof window === 'undefined') {
-      const response = await apiFetch<RawFood[]>(`/foods`);
+      const response = await apiFetch<{ data: RawFood[] }>(`/foods`).then(res => res.data);
       return response.map(mapRawFood);
     }
 
-    const todayVersion = getTodayVersion();
     const storedVersion = localStorage.getItem(FOODS_VERSION_KEY);
-    const storedData = localStorage.getItem(FOODS_DATA_KEY);
+    const storedDataStr = localStorage.getItem(FOODS_DATA_KEY);
+    let localFoods: any[] = [];
 
-    // Cache hit: version matches today, return parsed cached data
-    if (storedVersion === todayVersion && storedData) {
+    if (storedDataStr) {
       try {
-        return JSON.parse(storedData);
+        localFoods = JSON.parse(storedDataStr);
       } catch {
-        // corrupted — fall through to fetch
+        localFoods = [];
       }
     }
 
-    // Cache miss or stale: ask backend, passing our stored version
+    // Fetch updates from backend
     const params = storedVersion ? `?version=${storedVersion}` : '';
     const result = await apiFetch<{ changed: 0 | 1; version: string; data?: RawFood[] }>(`/foods${params}`);
 
     if (result.changed === 1 && result.data) {
-      const mapped = result.data.map(mapRawFood);
+      const mappedNew = result.data.map(mapRawFood);
+      let updatedFoods: any[];
+
+      if (localFoods.length === 0) {
+        updatedFoods = mappedNew;
+      } else {
+        // Merge delta updates: Replace or add items based on ID
+        const foodMap = new Map(localFoods.map(f => [f.id, f]));
+        mappedNew.forEach(newFood => {
+          foodMap.set(newFood.id, newFood);
+        });
+        updatedFoods = Array.from(foodMap.values());
+      }
+
+      // Sort by name for consistency
+      updatedFoods.sort((a, b) => a.name.localeCompare(b.name));
+
       localStorage.setItem(FOODS_VERSION_KEY, result.version);
-      localStorage.setItem(FOODS_DATA_KEY, JSON.stringify(mapped));
-      return mapped;
+      localStorage.setItem(FOODS_DATA_KEY, JSON.stringify(updatedFoods));
+      return updatedFoods;
     } else {
-      // Data unchanged: only update the version stamp
+      // Data unchanged: just update the version stamp and return local cache
       localStorage.setItem(FOODS_VERSION_KEY, result.version);
-      if (storedData) {
-        try {
-          return JSON.parse(storedData);
-        } catch { /* fall through */ }
-      }
-      // Edge case: no cached data but server says unchanged — force a full fetch
-      const fallback = await apiFetch<{ changed: 0 | 1; version: string; data?: RawFood[] }>(`/foods`);
-      if (fallback.data) {
-        const mapped = fallback.data.map(mapRawFood);
-        localStorage.setItem(FOODS_VERSION_KEY, fallback.version);
-        localStorage.setItem(FOODS_DATA_KEY, JSON.stringify(mapped));
-        return mapped;
-      }
-      return [];
+      return localFoods;
     }
   } catch (error) {
     console.warn('Failed to fetch foods from API', error);

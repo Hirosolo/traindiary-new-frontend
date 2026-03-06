@@ -251,48 +251,50 @@ function getTodayVersion(): string {
 
 export async function fetchExercises(): Promise<ApiExercise[]> {
   if (typeof window === 'undefined') {
-    return apiFetch<ApiExercise[]>(`/exercises`);
+    return apiFetch<{ data: ApiExercise[] }>(`/exercises`).then(res => res.data);
   }
 
-  const todayVersion = getTodayVersion();
   const storedVersion = localStorage.getItem(EXERCISES_VERSION_KEY);
-  const storedData = localStorage.getItem(EXERCISES_DATA_KEY);
+  const storedDataStr = localStorage.getItem(EXERCISES_DATA_KEY);
+  let localExercises: ApiExercise[] = [];
 
-  // Cache hit: version matches today, return cached data without any request
-  if (storedVersion === todayVersion && storedData) {
+  if (storedDataStr) {
     try {
-      return JSON.parse(storedData) as ApiExercise[];
+      localExercises = JSON.parse(storedDataStr);
     } catch {
-      // corrupted cache — fall through to fetch
+      localExercises = [];
     }
   }
 
-  // Cache miss or stale: ask backend, passing our stored version
+  // Fetch updates from backend
   const params = storedVersion ? `?version=${storedVersion}` : '';
   const result = await apiFetch<{ changed: 0 | 1; version: string; data?: ApiExercise[] }>(`/exercises${params}`);
 
   if (result.changed === 1 && result.data) {
-    // Data changed: persist both new version and new data
+    let updatedExercises: ApiExercise[];
+
+    if (localExercises.length === 0) {
+      // First time loading - take all data
+      updatedExercises = result.data;
+    } else {
+      // Merge delta updates: Replace or add items based on exercise_id
+      const exerciseMap = new Map(localExercises.map(ex => [ex.exercise_id, ex]));
+      result.data.forEach(newEx => {
+        exerciseMap.set(newEx.exercise_id, newEx);
+      });
+      updatedExercises = Array.from(exerciseMap.values());
+    }
+
+    // Sort by name for consistency
+    updatedExercises.sort((a, b) => a.name.localeCompare(b.name));
+
     localStorage.setItem(EXERCISES_VERSION_KEY, result.version);
-    localStorage.setItem(EXERCISES_DATA_KEY, JSON.stringify(result.data));
-    return result.data;
+    localStorage.setItem(EXERCISES_DATA_KEY, JSON.stringify(updatedExercises));
+    return updatedExercises;
   } else {
-    // Data unchanged: only update the version stamp
+    // Data unchanged: just update the version stamp and return local cache
     localStorage.setItem(EXERCISES_VERSION_KEY, result.version);
-    // Return whatever we have cached; if cache is empty fall back to a forced fetch
-    if (storedData) {
-      try {
-        return JSON.parse(storedData) as ApiExercise[];
-      } catch { /* fall through */ }
-    }
-    // Edge case: no cached data but server says unchanged — force a full fetch
-    const fallback = await apiFetch<{ changed: 0 | 1; version: string; data?: ApiExercise[] }>(`/exercises`);
-    if (fallback.data) {
-      localStorage.setItem(EXERCISES_VERSION_KEY, fallback.version);
-      localStorage.setItem(EXERCISES_DATA_KEY, JSON.stringify(fallback.data));
-      return fallback.data;
-    }
-    return [];
+    return localExercises;
   }
 }
 
