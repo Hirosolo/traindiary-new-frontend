@@ -31,6 +31,7 @@ import {
   fetchProgress,
   fetchSummary,
   addPlannedExercises,
+  updateWorkoutsMonthCache,
 } from "@/lib/api/workouts";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -360,6 +361,13 @@ export default function WorkoutPage() {
       await refreshSessions();
       const fresh = await fetchWorkoutSessionById(selectedWorkout.id);
       if (fresh) setSelectedWorkout(buildWorkoutDetails(fresh));
+      
+      // Update monthly cache in-place
+      const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+      updateWorkoutsMonthCache(monthParam, userId, (prev) => 
+        prev.map(s => String(s.session_id) === selectedWorkout.id ? (fresh || s) : s)
+      );
+
       setHasUnsavedChanges(false);
     } catch (e) {
       setErrorMessage("Sync failed. Check connection.");
@@ -395,7 +403,20 @@ export default function WorkoutPage() {
             weight_kg: isCardio ? 0 : (r.weight_kg ?? 0),
           }));
         });
-        await createWorkoutSession({ userId, scheduledDate: data.date, type: data.type, notes: data.note, exercises: exercisesPayload });
+        const created = await createWorkoutSession({ userId, scheduledDate: data.date, type: data.type, notes: data.note, exercises: exercisesPayload });
+        
+        // Update monthly cache in-place
+        const monthParam = data.date.slice(0, 7);
+        const newSession: ApiWorkoutSession = {
+            session_id: created?.session_id ?? created?.id,
+            scheduled_date: data.date,
+            type: data.type,
+            notes: data.note,
+            status: 'PENDING',
+            session_details: [],
+        };
+        updateWorkoutsMonthCache(monthParam, userId, (prev) => [...prev, newSession]);
+
         await refreshSessions();
         setIsLogWorkoutModalOpen(false);
       } catch (e) {
@@ -411,7 +432,14 @@ export default function WorkoutPage() {
               exercises: exercises.map(ex => ({ exercise_id: ex.id, planned_sets: ex.sets, planned_reps: ex.reps }))
           });
           const fresh = await fetchWorkoutSessionById(selectedWorkout.id);
-          if (fresh) setSelectedWorkout(buildWorkoutDetails(fresh));
+          if (fresh) {
+              setSelectedWorkout(buildWorkoutDetails(fresh));
+              // Update monthly cache
+              const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+              updateWorkoutsMonthCache(monthParam, userId, (prev) => 
+                prev.map(s => String(s.session_id) === selectedWorkout.id ? fresh : s)
+              );
+          }
           setIsAddExerciseModalOpen(false);
       } catch (e) {
           setErrorMessage("Failed to add exercises");
@@ -510,6 +538,15 @@ export default function WorkoutPage() {
                                 
                             // Update local state
                             setSelectedWorkout(prev => prev ? { ...prev, exercises: prev.exercises.filter(e => e.id !== id) } : null);
+
+                            // Update monthly cache
+                            const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+                            updateWorkoutsMonthCache(monthParam, userId, (prev) => 
+                              prev.map(s => String(s.session_id) === selectedWorkout.id 
+                                ? { ...s, session_details: s.session_details?.filter(d => String(d.session_detail_id) !== id) } 
+                                : s
+                              )
+                            );
                           }
                         } catch (error) {
                           console.error('Failed to delete exercise:', error);
@@ -522,6 +559,13 @@ export default function WorkoutPage() {
                     }}
                     onDeleteSession={async (id) => {
                         await deleteWorkoutSession(id);
+                        
+                        // Update monthly cache in-place
+                        const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+                        updateWorkoutsMonthCache(monthParam, userId, (prev) => 
+                            prev.filter(s => String(s.session_id) !== id)
+                        );
+
                         setSelectedWorkout(null);
                         refreshSessions();
                     }}

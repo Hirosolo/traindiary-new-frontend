@@ -16,6 +16,7 @@ import {
   fetchNutritionGoal,
   saveNutritionGoal,
   fetchMealDetails,
+  updateMealsMonthCache,
   ApiMeal,
 } from "@/lib/api/nutrition";
 import { fetchSummary } from "@/lib/api/workouts"; // Summary includes nutrition
@@ -75,6 +76,24 @@ export default function NutritionPage() {
     return days;
   }, [selectedDate]);
 
+  const currentMonth = useMemo(() => {
+    const d = selectedDate;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }, [selectedDate]);
+
+  const normaliseMeals = useCallback((mealsArray: any[]) => {
+    return mealsArray.map((m: any) => {
+        const hasTotals = m.total_calories != null || m.total_protein != null;
+        const calories = hasTotals ? (m.total_calories ?? 0) : 0;
+        const protein  = hasTotals ? (m.total_protein  ?? 0) : 0;
+        const carbs    = hasTotals ? (m.total_carbs    ?? 0) : 0;
+        const fats     = hasTotals ? (m.total_fat      ?? 0) : 0;
+        const fiber    = hasTotals ? (m.total_fibers   ?? 0) : 0;
+        const name = m.name || (m.meal_type ? String(m.meal_type).charAt(0).toUpperCase() + String(m.meal_type).slice(1) : 'Meal');
+        return { id: String(m.meal_id), meal_id: m.meal_id, name, mealType: m.meal_type || 'Other', time: m.meal_time || '12:00', calories, protein, carbs, fats, fiber };
+    });
+  }, []);
+
   const loadDailyData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -93,39 +112,11 @@ export default function NutritionPage() {
           });
       }
 
-      // 2. Fetch Meals
-      const response = await fetchMeals(userId, dateStr);
+      // 2. Fetch Meals for the whole month (cache-aware), then filter to selected day
+      const response = await fetchMeals(userId, dateStr, currentMonth);
       const mealsArray = Array.isArray(response) ? response : (response as any).data || [];
       
-      const detailedMeals = mealsArray.map((m: any) => {
-          // API returns total_* per meal (GET /meals)
-          const hasTotals = m.total_calories != null || m.total_protein != null;
-          const calories = hasTotals ? (m.total_calories ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.calories_per_serving ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
-          const protein = hasTotals ? (m.total_protein ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.protein_per_serving ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
-          const carbs = hasTotals ? (m.total_carbs ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.carbs_per_serving ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
-          const fats = hasTotals ? (m.total_fat ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.fat_per_serving ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
-          const fiber = hasTotals ? (m.total_fibers ?? 0) : (m.details?.reduce((acc: number, d: any) => acc + (d.food?.fiber ?? 0) * (d.amount_grams ?? 1), 0) ?? 0);
-
-          const name = m.name || (m.meal_type ? String(m.meal_type).charAt(0).toUpperCase() + String(m.meal_type).slice(1) : "Meal");
-          return {
-              id: String(m.meal_id),
-              meal_id: m.meal_id,
-              name,
-              mealType: m.meal_type || "Other",
-              time: m.meal_time || "12:00",
-              calories,
-              protein,
-              carbs,
-              fats,
-              fiber,
-              foodItems: m.details?.map((d: any) => ({
-                 id: String(d.meal_detail_id),
-                 name: d.food?.name,
-                 amount: `${d.amount_grams ?? d.numbers_of_serving ?? 1} servings`,
-                 calories: (d.food?.calories_per_serving ?? 0) * (d.amount_grams ?? d.numbers_of_serving ?? 1)
-              }))
-          };
-      });
+      const detailedMeals = normaliseMeals(mealsArray);
 
       setMeals(detailedMeals);
 
@@ -209,7 +200,7 @@ export default function NutritionPage() {
 
   const handleCreateMeal = async (newMeal: NewMealSession) => {
       try {
-          await createMeal({
+          const created = await createMeal({
               userId,
               mealDate: newMeal.date,
               mealTime: newMeal.time,
@@ -219,6 +210,16 @@ export default function NutritionPage() {
                   quantity: i.quantity ?? 1,
               })),
           });
+          // Add the new meal stub to the month cache so same-day views stay fresh
+          const mealMonth = newMeal.date.slice(0, 7);
+          const stub: ApiMeal = {
+              meal_id: created?.meal_id ?? created?.id,
+              meal_type: newMeal.mealType.toLowerCase(),
+              log_date: newMeal.date,
+              meal_time: newMeal.time,
+          };
+          updateMealsMonthCache(mealMonth, userId, (prev) => [...prev, stub]);
+          // Re-load daily view from the updated cache
           loadDailyData();
       } catch (e) {
           setErrorMessage("Failed to log meal session");
@@ -395,6 +396,12 @@ export default function NutritionPage() {
                         <button 
                             onClick={async () => {
                                 await deleteMeal(selectedMeal.meal_id);
+                                // Remove deleted meal from the month cache
+                                const mealDateStr = selectedDate.toISOString().split('T')[0];
+                                const mealMonth = mealDateStr.slice(0, 7);
+                                updateMealsMonthCache(mealMonth, userId, (prev) =>
+                                    prev.filter((m) => m.meal_id !== selectedMeal.meal_id)
+                                );
                                 setSelectedMeal(null);
                                 loadDailyData();
                             }}

@@ -80,15 +80,79 @@ export interface ApiWorkoutSession {
 
 export type ApiWorkoutSessionsResponse = ApiWorkoutSession[] | { sessions: ApiWorkoutSession[] };
 
+// ─── Workout Sessions Monthly Cache Helpers ──────────────────────────────────
+
+function workoutsCacheKey(month: string, userId: number | string) {
+  return `workouts_month_${month}_${userId}`;
+}
+function workoutsFetchedKey(month: string, userId: number | string) {
+  return `workouts_fetched_${month}_${userId}`;
+}
+
+function getTodayDateStr(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function getWorkoutsMonthCache(month: string, userId: number | string): ApiWorkoutSession[] | null {
+  if (typeof window === 'undefined') return null;
+  const fetched = localStorage.getItem(workoutsFetchedKey(month, userId));
+  if (fetched !== getTodayDateStr()) return null;
+  const raw = localStorage.getItem(workoutsCacheKey(month, userId));
+  if (!raw) return null;
+  try { return JSON.parse(raw) as ApiWorkoutSession[]; } catch { return null; }
+}
+
+function setWorkoutsMonthCache(month: string, userId: number | string, sessions: ApiWorkoutSession[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(workoutsCacheKey(month, userId), JSON.stringify(sessions));
+  localStorage.setItem(workoutsFetchedKey(month, userId), getTodayDateStr());
+}
+
+export function updateWorkoutsMonthCache(
+  month: string,
+  userId: number | string,
+  updater: (sessions: ApiWorkoutSession[]) => ApiWorkoutSession[]
+): void {
+  const cached = getWorkoutsMonthCache(month, userId) ?? [];
+  setWorkoutsMonthCache(month, userId, updater(cached));
+}
+
+export function invalidateWorkoutsMonthCache(month: string, userId: number | string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(workoutsCacheKey(month, userId));
+  localStorage.removeItem(workoutsFetchedKey(month, userId));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function fetchWorkoutSessions(
   userId: number,
   month?: string,
   date?: string
 ): Promise<ApiWorkoutSessionsResponse> {
+  const targetMonth = month ?? getTodayDateStr().slice(0, 7);
+
+  // Try the daily cache first
+  const cached = getWorkoutsMonthCache(targetMonth, userId);
+  if (cached) {
+    console.log('[fetchWorkoutSessions] served from cache', { targetMonth, count: cached.length });
+    return cached as ApiWorkoutSessionsResponse;
+  }
+
+  // Cache miss or stale → fetch full month
   const params = new URLSearchParams();
-  if (month) params.append("month", month);
-  if (date) params.append("date", date);
-  return apiFetch<ApiWorkoutSessionsResponse>(`/workouts?${params.toString()}`);
+  params.append('month', targetMonth);
+  if (date) params.append('date', date);
+  console.log('[fetchWorkoutSessions] fetching from network', { userId, targetMonth });
+  const data = await apiFetch<ApiWorkoutSessionsResponse>(`/workouts?${params.toString()}`);
+
+  const sessionsArray: ApiWorkoutSession[] = Array.isArray(data)
+    ? data
+    : (data as { sessions: ApiWorkoutSession[] }).sessions ?? [];
+
+  setWorkoutsMonthCache(targetMonth, userId, sessionsArray);
+  return sessionsArray as ApiWorkoutSessionsResponse;
 }
 
 export async function fetchWorkoutSessionById(

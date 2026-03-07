@@ -130,19 +130,82 @@ export interface ApiMealsResponse {
   total_count?: number;
 }
 
+// ─── Meals Monthly Cache Helpers ─────────────────────────────────────────────
+
+function mealsCacheKey(month: string, userId: number | string) {
+  return `meals_month_${month}_${userId}`;
+}
+function mealsFetchedKey(month: string, userId: number | string) {
+  return `meals_fetched_${month}_${userId}`;
+}
+
+function getTodayDateStr(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function getMealsMonthCache(month: string, userId: number | string): ApiMeal[] | null {
+  if (typeof window === 'undefined') return null;
+  const fetched = localStorage.getItem(mealsFetchedKey(month, userId));
+  if (fetched !== getTodayDateStr()) return null; // stale or never fetched today
+  const raw = localStorage.getItem(mealsCacheKey(month, userId));
+  if (!raw) return null;
+  try { return JSON.parse(raw) as ApiMeal[]; } catch { return null; }
+}
+
+function setMealsMonthCache(month: string, userId: number | string, meals: ApiMeal[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(mealsCacheKey(month, userId), JSON.stringify(meals));
+  localStorage.setItem(mealsFetchedKey(month, userId), getTodayDateStr());
+}
+
+export function updateMealsMonthCache(
+  month: string,
+  userId: number | string,
+  updater: (meals: ApiMeal[]) => ApiMeal[]
+): void {
+  const cached = getMealsMonthCache(month, userId) ?? [];
+  setMealsMonthCache(month, userId, updater(cached));
+}
+
+export function invalidateMealsMonthCache(month: string, userId: number | string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(mealsCacheKey(month, userId));
+  localStorage.removeItem(mealsFetchedKey(month, userId));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function fetchMeals(
   userId: number,
   date?: string,
   month?: string
 ): Promise<ApiMealsResponse> {
-  const params = new URLSearchParams();
-  if (date) params.append("date", date);
-  if (month) params.append("month", month);
+  // Derive the month string we need
+  const targetMonth = month ?? (date ? date.slice(0, 7) : getTodayDateStr().slice(0, 7));
+
+  // Try the daily cache first
+  const cached = getMealsMonthCache(targetMonth, userId);
+  if (cached) {
+    const filtered = date ? cached.filter((m) => (m.log_date ?? m.meal_date ?? '').startsWith(date)) : cached;
+    console.log('[fetchMeals] served from cache', { targetMonth, date, count: filtered.length });
+    return { data: filtered } as ApiMealsResponse;
+  }
+
+  // Cache miss or stale → fetch full month
+  const params = new URLSearchParams({ month: targetMonth });
   const url = `/meals?${params.toString()}`;
-  console.log("[fetchMeals] request", { userId, date, month, url });
+  console.log('[fetchMeals] fetching from network', { userId, targetMonth, url });
   const data = await apiFetch<ApiMealsResponse>(url);
-  console.log("[fetchMeals] response", data);
-  return data;
+
+  // Normalise to flat array for caching
+  const allMeals: ApiMeal[] = Array.isArray(data) ? data : ((data as any).data ?? []);
+  setMealsMonthCache(targetMonth, userId, allMeals);
+
+  // Return the day's slice if a specific date was requested
+  const result = date ? allMeals.filter((m) => (m.log_date ?? m.meal_date ?? '').startsWith(date)) : allMeals;
+  console.log('[fetchMeals] response', { count: result.length });
+  return { data: result } as ApiMealsResponse;
 }
 
 export interface NutritionGoal {
