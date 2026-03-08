@@ -475,12 +475,6 @@ export default function WorkoutPage() {
           <div className="lg:hidden p-4 border-b border-white/5 bg-surface-dark/50 backdrop-blur-md sticky top-0 z-20">
              <div className="flex justify-between items-center mb-4">
                <h1 className="text-2xl font-display font-bold uppercase italic tracking-tighter">Workout</h1>
-               <button 
-                 onClick={() => { setErrorMessage(null); setIsLogWorkoutModalOpen(true); }} 
-                 className="flex items-center justify-center p-2 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
-               >
-                 <span className="material-symbols-outlined text-2xl">add</span>
-               </button>
              </div>
              <div className="flex items-center justify-between gap-4 overflow-x-auto no-scrollbar pb-2">
                 {weekDays.map((d, i) => {
@@ -579,6 +573,16 @@ export default function WorkoutPage() {
                 />
             </div>
           </div>
+        </div>
+
+        {/* LOG BUTTON (MOBILE ONLY) */}
+        <div className="lg:hidden fixed bottom-8 right-8 z-40">
+           <button 
+             onClick={() => { setErrorMessage(null); setIsLogWorkoutModalOpen(true); }}
+             className="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all active:scale-95"
+           >
+              <span className="material-symbols-outlined text-3xl">add</span>
+           </button>
         </div>
 
         {/* DETAILS PANEL */}
