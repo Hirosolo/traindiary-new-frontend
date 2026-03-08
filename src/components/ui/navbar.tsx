@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { motion, useScroll, useMotionValueEvent } from "motion/react";
 import { useAuth } from "@/contexts/AuthContext";
+import SetGoalModal from "@/components/nutrition/SetGoalModal";
 
 interface NavItem {
   name: string;
@@ -30,6 +31,7 @@ export default function NavBar({
   className,
 }: AnimatedFixedNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const { scrollY } = useScroll();
   const [elevated, setElevated] = useState(false);
   const pathname = usePathname();
@@ -91,6 +93,15 @@ export default function NavBar({
           <button className="material-symbols-outlined text-white/70 hover:text-white transition-colors">
             search
           </button>
+          {user && (
+            <button 
+              onClick={() => setIsGoalModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full hover:bg-primary/20 transition-all group"
+            >
+              <span className="material-symbols-outlined text-[16px] text-primary group-hover:rotate-12 transition-transform">bolt</span>
+              <span className="text-[10px] font-bold text-white uppercase tracking-widest hidden md:block">Protocol</span>
+            </button>
+          )}
           {!user ? (
             <Link href="/signin" className="hidden sm:block bg-white text-black text-[11px] font-bold px-6 py-2 uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
               Join Now
@@ -152,6 +163,18 @@ export default function NavBar({
                 {item.name}
               </Link>
             ))}
+            {user && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsGoalModalOpen(true);
+                }}
+                className="flex items-center gap-4 text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-primary text-left"
+              >
+                <span className="material-symbols-outlined text-4xl">bolt</span>
+                Set Goal
+              </button>
+            )}
           </div>
           <div className="mt-auto pb-8">
             {!user ? (
@@ -166,6 +189,8 @@ export default function NavBar({
           </div>
         </div>
       </div>
+
+      <SetGoalModal isOpen={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} />
     </motion.nav>
   );
 }
