@@ -18,7 +18,11 @@ import {
   fetchMealDetails,
   updateMealsMonthCache,
   ApiMeal,
+  fetchWaterDaily,
+  logWater,
+  saveUserMetric,
 } from "@/lib/api/nutrition";
+import WaterTracker from "@/components/nutrition/WaterTracker";
 import { motion, AnimatePresence } from "framer-motion";
 
 
@@ -128,6 +132,10 @@ export default function NutritionPage() {
           fiber: acc.fiber + m.fiber,
           water: acc.water
       }), { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0, water: 0 });
+
+      // 4. Fetch Water
+      const waterData = await fetchWaterDaily(dateStr);
+      dailyTotals.water = waterData.total_ml;
 
       setMacros(dailyTotals);
     } catch (e) {
@@ -256,11 +264,50 @@ export default function NutritionPage() {
         {/* DAILY OVERVIEW */}
         <MacroOverview current={macros} goals={goals} />
 
-        {/* MEAL LIST */}
-        <DailyMealList 
-          meals={meals} 
-          onMealClick={handleMealClick} 
-        />
+        <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+                <DailyMealList 
+                  meals={meals} 
+                  onMealClick={handleMealClick} 
+                />
+            </div>
+            <div className="space-y-8">
+                <WaterTracker 
+                    currentMl={macros.water} 
+                    goalMl={goals.water} 
+                    onAddWater={async (amount) => {
+                        try {
+                            const dateStr = selectedDate.toISOString().split('T')[0];
+                            await logWater(amount, dateStr);
+                            loadDailyData();
+                        } catch (e) {
+                            setErrorMessage("Failed to log hydration");
+                        }
+                    }} 
+                />
+                
+                <button 
+                  onClick={async () => {
+                    const weight = prompt("Enter current weight (kg):");
+                    if (weight && !isNaN(Number(weight))) {
+                        try {
+                            await saveUserMetric({ weight_kg: Number(weight) });
+                            alert("Weight logged successfully. This will not affect your current protocol targets.");
+                        } catch (e) {
+                            setErrorMessage("Failed to update weight");
+                        }
+                    }
+                  }}
+                  className="w-full bg-white/5 border border-dashed border-white/20 p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 hover:bg-white/10 transition-all text-text-dim hover:text-white"
+                >
+                    <span className="material-symbols-outlined text-4xl">monitor_weight</span>
+                    <div className="text-center">
+                        <p className="text-[10px] font-black uppercase tracking-widest">Update Specs</p>
+                        <p className="text-[8px] font-bold text-text-dim uppercase mt-1">Log Weight/BF% Today</p>
+                    </div>
+                </button>
+            </div>
+        </div>
 
         {/* LOG BUTTON (MOBILE ONLY) */}
         <div className="lg:hidden fixed bottom-8 right-8 z-40">

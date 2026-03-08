@@ -275,11 +275,35 @@ export async function saveNutritionGoal(params: GoalCalculationParams & GoalCalc
 }
 
 export async function fetchLatestMetrics(): Promise<MetricData | null> {
-  try {
-    return await apiFetch<MetricData | null>("/nutrition/metrics/latest");
-  } catch {
-    return null;
-  }
+  const response = await fetch(`${API_BASE}/nutrition/metrics/latest`);
+  if (!response.ok) return null;
+  const result = await response.json();
+  return result.data;
+}
+
+export async function saveUserMetric(metrics: Partial<MetricData>): Promise<void> {
+  const response = await fetch(`${API_BASE}/nutrition/metrics`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(metrics),
+  });
+  if (!response.ok) throw new Error("Failed to save metrics");
+}
+
+export async function fetchWaterDaily(date: string): Promise<{ logs: any[]; total_ml: number }> {
+    const response = await fetch(`${API_BASE}/nutrition/water?date=${date}`);
+    if (!response.ok) return { logs: [], total_ml: 0 };
+    const result = await response.json();
+    return result.data;
+}
+
+export async function logWater(amount_ml: number, date?: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/nutrition/water`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount_ml, date }),
+    });
+    if (!response.ok) throw new Error("Failed to log water");
 }
 
 
