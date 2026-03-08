@@ -34,8 +34,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
     weight_kg: 75,
     activity_level: 'moderate',
     goal_type: 'maintain',
-    goal_speed: 'moderate',
-    workout_days_per_week: 3
+    goal_speed: 'moderate'
   });
 
   const [calcResult, setCalcResult] = useState<GoalCalculationResult | null>(null);

@@ -310,13 +310,11 @@ export interface MetricData {
   activity_level: 'sedentary' | 'light' | 'moderate' | 'heavy' | 'athlete';
   body_fat_percentage?: number;
   is_body_fat_estimated?: boolean;
-  workout_days_per_week?: number;
 }
 
 export interface GoalCalculationParams extends MetricData {
   goal_type: 'cutting' | 'lean_bulk' | 'maintain' | 'recomposition';
   goal_speed: 'slow' | 'moderate' | 'aggressive';
-  workout_days_per_week?: number;
 }
 
 export interface GoalCalculationResult {

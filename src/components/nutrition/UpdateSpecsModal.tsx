@@ -28,8 +28,7 @@ export default function UpdateSpecsModal({ isOpen, onClose, onSuccess }: UpdateS
     sex: 'male',
     height_cm: 175,
     weight_kg: 75,
-    activity_level: 'moderate',
-    workout_days_per_week: 3
+    activity_level: 'moderate'
   });
 
   useEffect(() => {
@@ -205,16 +204,16 @@ export default function UpdateSpecsModal({ isOpen, onClose, onSuccess }: UpdateS
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Workout Days / Week</label>
-                  <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-2xl p-4 px-6">
-                    <button onClick={() => setFormData({...formData, workout_days_per_week: Math.max(0, (formData.workout_days_per_week || 0) - 1)})} className="text-white hover:text-primary transition-colors">
-                      <span className="material-symbols-outlined">remove_circle</span>
-                    </button>
-                    <span className="text-2xl font-display font-bold text-white">{formData.workout_days_per_week}</span>
-                    <button onClick={() => setFormData({...formData, workout_days_per_week: Math.min(7, (formData.workout_days_per_week || 0) + 1)})} className="text-white hover:text-primary transition-colors">
-                      <span className="material-symbols-outlined">add_circle</span>
-                    </button>
-                  </div>
+                  <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Body Fat % (Optional)</label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={formData.body_fat_percentage || ''}
+                    onChange={e => setFormData({...formData, body_fat_percentage: e.target.value ? parseFloat(e.target.value) : undefined})}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-primary text-white font-display font-medium"
+                    placeholder="e.g. 15"
+                  />
+                  <p className="text-[9px] text-text-dim px-2">If provided, BMR will be calculated using the more accurate Katch-McArdle formula.</p>
                 </div>
               </div>
             )}
