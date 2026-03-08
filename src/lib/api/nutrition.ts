@@ -209,6 +209,7 @@ export async function fetchMeals(
 }
 
 export interface NutritionGoal {
+  goal_id?: number;
   calories_target: number;
   protein_target_g: number;
   carbs_target_g: number;
@@ -226,11 +227,59 @@ export async function fetchNutritionGoal(date: string): Promise<NutritionGoal | 
   }
 }
 
-export async function saveNutritionGoal(goal: NutritionGoal): Promise<void> {
-  await apiFetch(`/nutrition/goals`, {
+export interface MetricData {
+  age: number;
+  sex: 'male' | 'female';
+  height_cm: number;
+  weight_kg: number;
+  activity_level: 'sedentary' | 'light' | 'moderate' | 'heavy' | 'athlete';
+  body_fat_percentage?: number;
+  is_body_fat_estimated?: boolean;
+}
+
+export interface GoalCalculationParams extends MetricData {
+  goal_type: 'cutting' | 'lean_bulk' | 'maintain' | 'recomposition';
+  goal_speed: 'slow' | 'moderate' | 'aggressive';
+  workout_days_per_week?: number;
+}
+
+export interface GoalCalculationResult {
+  bmr: number;
+  tdee: number;
+  daily_calories: number;
+  protein_g: number;
+  fat_g: number;
+  carbs_g: number;
+  hydration_ml: number;
+}
+
+export async function calculateGoalTargets(params: GoalCalculationParams): Promise<GoalCalculationResult> {
+  return apiFetch<GoalCalculationResult>("/nutrition/goals/calculate", {
     method: "POST",
-    body: JSON.stringify(goal),
+    body: JSON.stringify(params),
   });
+}
+
+export async function saveNutritionGoal(params: GoalCalculationParams & GoalCalculationResult): Promise<any> {
+  return apiFetch("/nutrition/goals", {
+    method: "POST",
+    body: JSON.stringify({
+      ...params,
+      calories_target: params.daily_calories,
+      protein_target_g: params.protein_g,
+      carbs_target_g: params.carbs_g,
+      fat_target_g: params.fat_g,
+      hydration_target_ml: params.hydration_ml,
+    }),
+  });
+}
+
+export async function fetchLatestMetrics(): Promise<MetricData | null> {
+  try {
+    return await apiFetch<MetricData | null>("/nutrition/metrics/latest");
+  } catch {
+    return null;
+  }
 }
 
 

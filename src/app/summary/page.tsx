@@ -7,6 +7,7 @@ import { CalendarLume } from "@/components/ui/calendar-lume";
 import NavBar from "@/components/ui/navbar";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { fetchSummary } from "@/lib/api/workouts";
+import SetGoalModal from "@/components/nutrition/SetGoalModal";
 
 type WorkoutExerciseData = {
   name: string;
@@ -71,58 +72,60 @@ export default function SummaryPage() {
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
   const [workoutData, setWorkoutData] = useState<WorkoutExerciseData[]>([]);
   const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(false);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   
   // Fetch summary data
-  useEffect(() => {
-    const loadSummaryData = async () => {
-      setIsLoadingSummary(true);
-      setIsLoadingWorkouts(true);
-      try {
-        const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
-        const data = await fetchSummary(monthParam);
-        
-        if (data) {
-          // Build Daily Dataset for the chart
-          const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-          const newDataset: SummaryPoint[] = [];
+  const loadSummaryData = useCallback(async () => {
+    setIsLoadingSummary(true);
+    setIsLoadingWorkouts(true);
+    try {
+      const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+      const data = await fetchSummary(monthParam);
+      
+      if (data) {
+        // Build Daily Dataset for the chart
+        const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+        const newDataset: SummaryPoint[] = [];
 
-          for (let i = 1; i <= daysInMonth; i++) {
-            const dayStr = String(i).padStart(2, "0");
-            const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${dayStr}`;
-            const dayDate = new Date(selectedYear, selectedMonth, i);
-            
-            const serverDay = (data.daily_data || []).find((d: any) => d.date === dateStr);
-
-            newDataset.push({
-              label: dayStr,
-              dateLabel: formatDateLabel(dayDate),
-              workouts: serverDay?.workouts || 0,
-              kcal: Math.round(serverDay?.kcal || 0),
-              protein: Math.round(serverDay?.protein || 0),
-              carbs: Math.round(serverDay?.carbs || 0),
-              fats: Math.round(serverDay?.fats || 0),
-              fiber: Math.round(serverDay?.fiber || 0),
-              sugar: Math.round(serverDay?.sugar || 0),
-              gr: serverDay?.gr || 0,
-            });
-          }
-          setDataset(newDataset);
-          setWorkoutData(data.exercise_data || []);
+        for (let i = 1; i <= daysInMonth; i++) {
+          const dayStr = String(i).padStart(2, "0");
+          const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${dayStr}`;
+          const dayDate = new Date(selectedYear, selectedMonth, i);
           
-          if ((data.exercise_data?.length ?? 0) > 0 && !selectedExercise) {
-            setSelectedExercise(data.exercise_data?.[0]?.name || "");
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load summary data:", error);
-      } finally {
-        setIsLoadingSummary(false);
-        setIsLoadingWorkouts(false);
-      }
-    };
+          const serverDay = (data.daily_data || []).find((d: any) => d.date === dateStr);
 
+          newDataset.push({
+            label: dayStr,
+            dateLabel: formatDateLabel(dayDate),
+            workouts: serverDay?.workouts || 0,
+            kcal: Math.round(serverDay?.kcal || 0),
+            protein: Math.round(serverDay?.protein || 0),
+            carbs: Math.round(serverDay?.carbs || 0),
+            fats: Math.round(serverDay?.fats || 0),
+            fiber: Math.round(serverDay?.fiber || 0),
+            sugar: Math.round(serverDay?.sugar || 0),
+            gr: serverDay?.gr || 0,
+          });
+        }
+        setDataset(newDataset);
+        setWorkoutData(data.exercise_data || []);
+        
+        if ((data.exercise_data?.length ?? 0) > 0 && !selectedExercise) {
+          setSelectedExercise(data.exercise_data?.[0]?.name || "");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load summary data:", error);
+    } finally {
+      setIsLoadingSummary(false);
+      setIsLoadingWorkouts(false);
+    }
+  }, [selectedMonth, selectedYear, selectedExercise]);
+  
+  // Fetch summary data on mount and dependencies change
+  useEffect(() => {
     loadSummaryData();
-  }, [selectedMonth, selectedYear]);
+  }, [loadSummaryData]);
 
   const handleMonthYearChange = (year: number, month: number) => {
     setSelectedYear(year);
@@ -163,40 +166,56 @@ export default function SummaryPage() {
             </p>
           </div>
 
-          {/* Month/Year Selector */}
-          <div className="relative max-w-xs">
-            <button
-              onClick={() => {
-                setCalendarStep("year");
-                setIsCalendarOpen(true);
-              }}
-              className="w-full bg-surface-card border border-white/5 rounded-xl px-4 py-3 hover:border-white/10 transition-colors text-left flex flex-col items-start gap-1"
-            >
-              <span className="text-[10px] uppercase tracking-[0.16em] text-text-dim font-bold block mb-2">
-                Select Period
-              </span>
-              <div className="flex flex-col">
-                <span className="text-sm text-text-dim font-medium">
-                  {monthNames[selectedMonth]}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Month/Year Selector */}
+            <div className="relative w-full max-w-xs">
+              <button
+                onClick={() => {
+                  setCalendarStep("year");
+                  setIsCalendarOpen(true);
+                }}
+                className="w-full bg-surface-card border border-white/5 rounded-xl px-4 py-3 hover:border-white/10 transition-colors text-left flex flex-col items-start gap-1"
+              >
+                <span className="text-[10px] uppercase tracking-[0.16em] text-text-dim font-bold block mb-2">
+                  Select Period
                 </span>
-                <p className="text-2xl font-display font-bold text-white">
-                  {selectedYear}
-                </p>
-              </div>
-            </button>
+                <div className="flex flex-col">
+                  <span className="text-sm text-text-dim font-medium">
+                    {monthNames[selectedMonth]}
+                  </span>
+                  <p className="text-2xl font-display font-bold text-white">
+                    {selectedYear}
+                  </p>
+                </div>
+              </button>
 
-            {/* Calendar Modal - Fixed Position */}
-            {isCalendarOpen && (
-              <div className="absolute top-full left-0 mt-3 z-50 animate-in fade-in duration-200">
-                <CalendarLume
-                  defaultMonth={selectedMonth}
-                  defaultYear={selectedYear}
-                  onMonthYearChange={handleMonthYearChange}
-                  initialStep={calendarStep}
-                  onClose={() => setIsCalendarOpen(false)}
-                />
-              </div>
-            )}
+              {/* Calendar Modal - Fixed Position */}
+              {isCalendarOpen && (
+                <div className="absolute top-full left-0 mt-3 z-50 animate-in fade-in duration-200">
+                  <CalendarLume
+                    defaultMonth={selectedMonth}
+                    defaultYear={selectedYear}
+                    onMonthYearChange={handleMonthYearChange}
+                    initialStep={calendarStep}
+                    onClose={() => setIsCalendarOpen(false)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Set Goal Button */}
+            <button
+               onClick={() => setIsGoalModalOpen(true)}
+               className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-4 flex items-center gap-4 hover:bg-primary/20 transition-all group"
+            >
+               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-white text-xl">auto_awesome</span>
+               </div>
+               <div className="text-left">
+                  <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Target Protocol</p>
+                  <p className="text-sm font-bold text-white uppercase tracking-tight">Set New Goal</p>
+               </div>
+            </button>
           </div>
         </div>
 
@@ -569,6 +588,13 @@ export default function SummaryPage() {
           )}
         </div>
       </main>
+
+      {/* Modals */}
+      <SetGoalModal 
+        isOpen={isGoalModalOpen} 
+        onClose={() => setIsGoalModalOpen(false)}
+        onSuccess={() => loadSummaryData()}
+      />
     </div>
   );
 }
