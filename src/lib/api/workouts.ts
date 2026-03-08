@@ -415,7 +415,12 @@ export interface SummaryPayload {
   carbs_avg?: number;
   fats_avg?: number;
   daily_data?: any[];
-  exercise_data?: Array<{ name: string; count: number; volume: number }>;
+  exercise_data?: Array<{ 
+    name: string; 
+    count: number; 
+    volume: number;
+    history: Array<{ date: string; weight: number; reps: number }>;
+  }>;
 }
 
 export async function fetchSummary(month: string): Promise<SummaryPayload> {

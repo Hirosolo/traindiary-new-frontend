@@ -12,6 +12,7 @@ type WorkoutExerciseData = {
   name: string;
   count: number;
   volume: number;
+  history: Array<{ date: string; weight: number; reps: number }>;
 };
 
 type ExerciseLog = {
@@ -451,21 +452,25 @@ export default function SummaryPage() {
           {/* Workout Tab */}
           {activeTab === "workout" && (
             <div className="space-y-6">
-              {/* Exercise Selection */}
-              <div className="flex gap-2 flex-wrap">
-                {workoutData.map((exercise) => (
-                  <button
-                    key={exercise.name}
-                    onClick={() => setSelectedExercise(exercise.name)}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all text-xs whitespace-nowrap ${
-                      selectedExercise === exercise.name
-                        ? "bg-primary text-white"
-                        : "bg-surface-card border border-white/5 text-text-dim hover:border-white/10"
-                    }`}
+              {/* Exercise Selection Select Box */}
+              <div className="mb-6">
+                <label className="text-[10px] font-black text-text-dim uppercase tracking-widest block mb-4">Select Exercise</label>
+                <div className="relative">
+                  <select 
+                    className="w-full bg-surface-card border border-white/10 rounded-2xl py-4 px-6 appearance-none focus:outline-none focus:ring-2 focus:ring-primary text-sm font-display font-bold uppercase tracking-tight"
+                    value={selectedExercise || ""}
+                    onChange={(e) => setSelectedExercise(e.target.value)}
                   >
-                    {exercise.name.substring(0, 20)}
-                  </button>
-                ))}
+                    {workoutData.map((ex) => (
+                      <option key={ex.name} value={ex.name}>
+                        {ex.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-text-dim">
+                    expand_more
+                  </span>
+                </div>
               </div>
 
               {/* Workout Graph */}
@@ -478,54 +483,55 @@ export default function SummaryPage() {
                   <div className="flex justify-between items-start mb-6">
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-white uppercase font-display italic">
-                        {selectedExercise}
+                        {selectedExercise} - PR Progress
                       </h3>
                       <p className="text-[9px] text-text-dim font-medium uppercase tracking-wider mt-0.5">
-                        Frequency and volume progress
+                        Historical personal records
                       </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-6">
-                    {workoutData.find((ex) => ex.name === selectedExercise) && (
-                      <>
-                        <div className="bg-surface-dark rounded-lg p-4 border border-white/5">
-                          <p className="text-[9px] text-text-dim uppercase tracking-wider font-bold">Times Done</p>
-                          <p className="text-2xl font-bold text-white mt-2">
-                            {workoutData.find((ex) => ex.name === selectedExercise)?.count}
-                          </p>
-                        </div>
-                        <div className="bg-surface-dark rounded-lg p-4 border border-white/5">
-                          <p className="text-[9px] text-text-dim uppercase tracking-wider font-bold">Total Volume</p>
-                          <p className="text-2xl font-bold text-white mt-2">
-                            {Math.round(workoutData.find((ex) => ex.name === selectedExercise)?.volume || 0)} kg×reps
-                          </p>
-                        </div>
-                      </>
-                    )}
+                    {(() => {
+                      const selectedExData = workoutData.find((ex) => ex.name === selectedExercise);
+                      if (!selectedExData) return null;
+                      return (
+                        <>
+                          <div className="bg-surface-dark rounded-lg p-4 border border-white/5">
+                            <p className="text-[9px] text-text-dim uppercase tracking-wider font-bold">Total Sets</p>
+                            <p className="text-2xl font-bold text-white mt-2">
+                              {selectedExData.count}
+                            </p>
+                          </div>
+                          <div className="bg-surface-dark rounded-lg p-4 border border-white/5">
+                            <p className="text-[9px] text-text-dim uppercase tracking-wider font-bold">Total Volume</p>
+                            <p className="text-2xl font-bold text-white mt-2">
+                              {Math.round(selectedExData.volume || 0)} kg×reps
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   <ChartContainer
                     className="h-[300px] w-full rounded-xl border border-white/5 bg-surface-card"
                     config={{
-                      count: { label: "Times Done", color: "#f97316" },
-                      volume: { label: "Volume", color: "#22c55e" },
+                      weight: { label: "Weight (KG)", color: "#f97316" },
+                      reps: { label: "Reps", color: "#3b82f6" },
                     }}
                   >
                     <LineChart
                       accessibilityLayer
-                      data={[
-                        {
-                          name: "Summary",
-                          count: workoutData.find((ex) => ex.name === selectedExercise)?.count || 0,
-                          volume: workoutData.find((ex) => ex.name === selectedExercise)?.volume || 0,
-                        },
-                      ]}
+                      data={workoutData.find((ex) => ex.name === selectedExercise)?.history.map(h => ({
+                          ...h,
+                          label: new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      })) || []}
                       margin={{ top: 12, left: 16, right: 16, bottom: 12 }}
                     >
                       <CartesianGrid strokeDasharray="6 6" stroke="rgba(255,255,255,0.1)" />
                       <XAxis
-                        dataKey="name"
+                        dataKey="label"
                         tickLine={false}
                         axisLine={false}
                         tickMargin={10}
@@ -534,12 +540,22 @@ export default function SummaryPage() {
                       <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                       <Line
                         type="monotone"
-                        dataKey="count"
-                        name="Times"
-                        stroke="var(--color-count)"
-                        strokeWidth={3}
-                        dot={{ r: 4, fill: "var(--color-count)", strokeWidth: 0 }}
+                        dataKey="weight"
+                        name="Weight"
+                        stroke="var(--color-weight)"
+                        strokeWidth={4}
+                        dot={{ r: 4, fill: "var(--color-weight)", strokeWidth: 0 }}
                         activeDot={{ r: 6, strokeWidth: 0 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="reps"
+                        name="Reps"
+                        stroke="var(--color-reps)"
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={{ r: 3, fill: "var(--color-reps)", strokeWidth: 0 }}
+                        activeDot={{ r: 5, strokeWidth: 0 }}
                       />
                     </LineChart>
                   </ChartContainer>
