@@ -331,14 +331,18 @@ export default function WorkoutPage() {
     setIsSavingWorkout(true);
     try {
       // 1. Collect all sets from all exercises to sync in one go
-      const logsToSync = selectedWorkout.exercises.flatMap(ex => 
-        ex.sets.map(set => {
+      const logsToSync = selectedWorkout.exercises.flatMap(ex => {
+        const sid = Number(ex.id);
+        const isNewExercise = isNaN(sid);
+
+        return ex.sets.map(set => {
           const numericId = Number(set.id);
-          const isNew = !Number.isFinite(numericId);
+          const isNewSet = !Number.isFinite(numericId);
           
           return {
-            set_id: isNew ? undefined : numericId,
-            session_detail_id: Number(ex.id),
+            set_id: isNewSet ? undefined : numericId,
+            session_detail_id: isNewExercise ? undefined : sid,
+            exercise_id: ex.exercise_id, // Include this for the backend to create session_detail if needed
             actual_reps: ex.isCardio ? undefined : set.reps,
             reps: ex.isCardio ? undefined : set.reps, // Support both field names
             duration: ex.isCardio ? set.duration ?? 0 : undefined,
@@ -346,11 +350,11 @@ export default function WorkoutPage() {
             status: set.status,
             notes: set.notes,
           };
-        })
-      );
+        });
+      });
 
       if (logsToSync.length > 0) {
-        await syncWorkoutLogs(logsToSync);
+        await syncWorkoutLogs(selectedWorkout.id, logsToSync);
       }
 
       // Check if all done

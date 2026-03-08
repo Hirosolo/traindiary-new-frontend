@@ -249,10 +249,10 @@ export async function logExerciseSet(payload: {
   });
 }
 
-export async function syncWorkoutLogs(logs: any[]) {
+export async function syncWorkoutLogs(sessionId: string | number, logs: any[]) {
   return apiFetch(`/workouts/logs/sync`, {
     method: "POST",
-    body: JSON.stringify({ logs }),
+    body: JSON.stringify({ sessionId, logs }),
   });
 }
 
