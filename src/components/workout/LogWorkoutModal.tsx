@@ -24,6 +24,11 @@ interface Exercise {
   description?: string;
   image?: string;
   type?: string;
+  personal_records?: {
+    weight_kg: number;
+    reps: number;
+    achieved_at: string;
+  }[];
 }
 
 interface SelectedExercise extends Exercise {
@@ -157,7 +162,9 @@ export default function LogWorkoutModal({
     if (isSelected) {
       setSelectedExercises(selectedExercises.filter((ex) => ex.id !== exercise.id));
     } else {
-      const defaultTargets = isCardioExercise(exercise) ? [20] : [12, 12, 12];
+      const pr = exercise.personal_records?.[0];
+      const defaultRepCount = pr?.reps || 12;
+      const defaultTargets = isCardioExercise(exercise) ? [20] : [defaultRepCount, defaultRepCount, defaultRepCount];
       setSelectedExercises([
         ...selectedExercises,
         { ...exercise, reps: defaultTargets },

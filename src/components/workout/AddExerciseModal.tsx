@@ -17,6 +17,11 @@ interface Exercise {
   category?: string;
   description?: string;
   image?: string;
+  personal_records?: {
+    weight_kg: number;
+    reps: number;
+    achieved_at: string;
+  }[];
 }
 
 interface SelectedExercise extends Exercise {
@@ -59,6 +64,7 @@ export default function AddExerciseModal({
             category: ex.category,
             description: ex.description,
             image: ex.image,
+            personal_records: ex.personal_records,
           }))
           .filter((ex: Exercise) => !existingExerciseIds.includes(ex.id));
         setAvailableExercises(normalized);
@@ -92,7 +98,8 @@ export default function AddExerciseModal({
     if (isSelected) {
       setSelectedExercises(selectedExercises.filter((ex) => ex.id !== exercise.id));
     } else {
-      setSelectedExercises([...selectedExercises, { ...exercise, sets: 3, reps: 12 }]);
+      const pr = exercise.personal_records?.[0];
+      setSelectedExercises([...selectedExercises, { ...exercise, sets: 3, reps: pr?.reps || 12 }]);
     }
   };
 

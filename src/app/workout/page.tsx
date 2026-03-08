@@ -180,6 +180,7 @@ export default function WorkoutPage() {
       type: detail.exercises?.type,
       isCardio,
       sets,
+      personalRecord: detail.personal_record,
     };
   }, []);
 

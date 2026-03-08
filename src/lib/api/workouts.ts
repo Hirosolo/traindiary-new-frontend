@@ -36,6 +36,11 @@ export interface ApiExercise {
   description?: string;
   image?: string;
   type?: string;
+  personal_records?: {
+    weight_kg: number;
+    reps: number;
+    achieved_at: string;
+  }[];
 }
 
 export interface ApiExerciseLog {
@@ -60,6 +65,11 @@ export interface ApiSessionDetail {
   planned_reps?: number;
   exercises?: ApiExercise;
   exercise_logs?: ApiExerciseLog[];
+  personal_record?: {
+    weight_kg: number;
+    reps: number;
+    achieved_at?: string;
+  } | null;
 }
 
 export interface ApiSessionDetailsResponse {

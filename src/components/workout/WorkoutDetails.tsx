@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
@@ -25,6 +25,11 @@ export interface Exercise {
   type?: string;
   isCardio?: boolean;
   isLocked?: boolean;
+  personalRecord?: {
+    weight_kg: number;
+    reps: number;
+    achieved_at?: string;
+  } | null;
 }
 
 export interface WorkoutDetailsData {
@@ -65,7 +70,7 @@ export default function WorkoutDetails({
   hasUnsavedChanges = false,
   isLoading = false,
 }: WorkoutDetailsProps) {
-  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -91,15 +96,12 @@ export default function WorkoutDetails({
 
   if (!workout) return null;
 
-  const toggleExercise = (exerciseId: string) => {
-    const newExpanded = new Set(expandedExercises);
-    if (newExpanded.has(exerciseId)) {
-      newExpanded.delete(exerciseId);
-    } else {
-      newExpanded.add(exerciseId);
+  // Effect to select the first exercise by default when workout is loaded
+  useEffect(() => {
+    if (workout?.exercises && workout.exercises.length > 0 && !selectedExerciseId) {
+      setSelectedExerciseId(workout.exercises[0].id);
     }
-    setExpandedExercises(newExpanded);
-  };
+  }, [workout, selectedExerciseId]);
 
   const allSetsCompleted = (exercise: Exercise) => 
     exercise.sets.length > 0 && exercise.sets.every(set => set.status === true);
@@ -186,59 +188,80 @@ export default function WorkoutDetails({
               )}
             </header>
 
+            <div className="mb-8">
+              <label className="text-[10px] font-black text-text-dim uppercase tracking-widest block mb-4">Select Exercise</label>
+              <div className="relative">
+                <select 
+                  className="w-full bg-surface-card border border-white/10 rounded-2xl py-4 px-6 appearance-none focus:outline-none focus:ring-2 focus:ring-primary text-sm font-display font-bold uppercase tracking-tight"
+                  value={selectedExerciseId || ""}
+                  onChange={(e) => setSelectedExerciseId(e.target.value)}
+                >
+                  {workout.exercises.map((ex) => (
+                    <option key={ex.id} value={ex.id}>
+                      {ex.name} {ex.personalRecord ? `(PR: ${ex.personalRecord.weight_kg}kg)` : ""}
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-text-dim">
+                  expand_more
+                </span>
+              </div>
+            </div>
+
             <div className="space-y-8">
-              {workout.exercises.map((exercise, exerciseIndex) => {
-                const isExpanded = expandedExercises.has(exercise.id);
+              {workout.exercises.filter(ex => !selectedExerciseId || ex.id === selectedExerciseId).map((exercise, exerciseIndex) => {
+                const isExpanded = true; // Always expanded in this view
                 const isDone = allSetsCompleted(exercise);
                 const isCardio = Boolean(exercise.isCardio);
+                const actualIndex = workout.exercises.findIndex(e => e.id === exercise.id);
 
                 return (
                   <div
                     key={exercise.id}
                     className={`relative rounded-3xl transition-all duration-300 ${
-                      isDone ? "bg-emerald-500/5 ring-1 ring-emerald-500/20" : ""
+                      isDone ? "bg-emerald-500/5 ring-1 ring-emerald-500/20" : "bg-white/[0.02]"
                     }`}
                   >
-                    <div
-                      className="p-5 lg:p-6 cursor-pointer group"
-                      onClick={() => toggleExercise(exercise.id)}
-                    >
-                      <div className="flex justify-between items-start">
+                    <div className="p-5 lg:p-6 pb-2">
+                      <div className="flex justify-between items-start mb-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                             <span className="text-[9px] font-black text-text-dim uppercase tracking-widest">Exercise 0{exerciseIndex + 1}</span>
+                             <span className="text-[9px] font-black text-text-dim uppercase tracking-widest">Exercise 0{actualIndex + 1}</span>
                              {isDone && (
                                 <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Done</span>
                              )}
                           </div>
-                          <h3 className={`text-xl font-display font-bold uppercase truncate transition-colors ${
-                              isDone ? "text-emerald-500" : "text-white group-hover:text-primary"
+                          <h3 className={`text-2xl font-display font-bold uppercase truncate transition-colors ${
+                              isDone ? "text-emerald-500" : "text-white"
                             }`}>
                             {exercise.name}
                           </h3>
+                          {exercise.personalRecord && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="material-symbols-outlined text-sm text-primary">trophy</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                                Personal Record: {exercise.personalRecord.weight_kg}kg × {exercise.personalRecord.reps} reps
+                              </span>
+                            </div>
+                          )}
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                           {!isReadOnly && onDeleteExercise && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setConfirmDialog({
-                                    isOpen: true,
-                                    title: "Remove Exercise",
-                                    message: `Are you sure you want to remove "${exercise.name}" from this session? All sets for this exercise will be deleted.`,
-                                    onConfirm: () => onDeleteExercise(exercise.id),
-                                  });
-                                }}
-                                className="opacity-0 group-hover:opacity-100 w-8 h-8 flex items-center justify-center rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                              >
-                                <span className="material-symbols-outlined text-base">delete</span>
-                              </button>
-                           )}
-                           <span className={`material-symbols-outlined text-text-dim transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}>
-                              expand_more
-                           </span>
-                        </div>
+                        {!isReadOnly && onDeleteExercise && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDialog({
+                                isOpen: true,
+                                title: "Remove Exercise",
+                                message: `Are you sure you want to remove "${exercise.name}" from this session? All sets for this exercise will be deleted.`,
+                                onConfirm: () => onDeleteExercise(exercise.id),
+                              });
+                            }}
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10"
+                          >
+                            <span className="material-symbols-outlined text-lg">delete</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
