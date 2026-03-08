@@ -292,7 +292,7 @@ export default function NutritionPage() {
         </div>
 
         {/* LOG BUTTON (MOBILE ONLY) */}
-        <div className="lg:hidden fixed bottom-8 right-8 z-40">
+        <div className="lg:hidden fixed bottom-24 right-6 z-40">
            <button 
              onClick={() => setIsLogModalOpen(true)}
              className="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all active:scale-95"
