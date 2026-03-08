@@ -35,6 +35,7 @@ import {
   syncWorkoutLogs,
 } from "@/lib/api/workouts";
 import { motion, AnimatePresence } from "framer-motion";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 type MuscleSplit = {
   name: string;
@@ -470,8 +471,17 @@ export default function WorkoutPage() {
         />
 
         <div className="flex-1 flex flex-col bg-background-dark relative">
-          {/* TOP CALENDAR (Mobile Day Picker) */}
+          {/* MOBILE HEADER & DAY PICKER */}
           <div className="lg:hidden p-4 border-b border-white/5 bg-surface-dark/50 backdrop-blur-md sticky top-0 z-20">
+             <div className="flex justify-between items-center mb-4">
+               <h1 className="text-2xl font-display font-bold uppercase italic tracking-tighter">Workout</h1>
+               <button 
+                 onClick={() => { setErrorMessage(null); setIsLogWorkoutModalOpen(true); }} 
+                 className="flex items-center justify-center p-2 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+               >
+                 <span className="material-symbols-outlined text-2xl">add</span>
+               </button>
+             </div>
              <div className="flex items-center justify-between gap-4 overflow-x-auto no-scrollbar pb-2">
                 {weekDays.map((d, i) => {
                     const isSelected = d.toDateString() === selectedDate.toDateString();
@@ -497,13 +507,63 @@ export default function WorkoutPage() {
                 {/* Dashboard Stats (Tablet/Mobile Only) */}
                 <div className="lg:hidden grid grid-cols-2 gap-4 mb-8">
                    <div className="bg-surface-card p-5 rounded-3xl border border-white/5">
-                        <span className="text-[8px] font-black text-primary uppercase tracking-widest block mb-2">My GR</span>
+                        <span className="text-[8px] font-black text-primary uppercase tracking-widest block mb-1">GR Score</span>
                         <p className="text-3xl font-display font-bold">{grScore.toLocaleString()}</p>
                    </div>
-                   <div className="bg-surface-card p-5 rounded-3xl border border-white/5">
-                        <span className="text-[8px] font-black text-orange-500 uppercase tracking-widest block mb-2">Streak</span>
-                        <p className="text-3xl font-display font-bold">{currentStreak}D</p>
+                   <div className="bg-surface-card p-5 rounded-3xl border border-white/5 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-3 opacity-10">
+                          <span className="material-symbols-outlined text-4xl text-orange-500">local_fire_department</span>
+                        </div>
+                        <span className="text-[8px] font-black text-orange-500 uppercase tracking-widest block mb-1">Streak</span>
+                        <div className="flex items-end gap-1">
+                          <p className="text-3xl font-display font-bold">{currentStreak}</p>
+                          <span className="text-[10px] text-text-dim font-bold mb-1 uppercase tracking-wider">Days</span>
+                        </div>
                    </div>
+
+                   {/* Muscle Split Mobile */}
+                   {muscleSplit && muscleSplit.length > 0 && (
+                     <div className="bg-surface-card p-5 rounded-3xl border border-white/5 col-span-2">
+                          <span className="text-[8px] font-black text-text-dim uppercase tracking-widest block mb-4">Muscle Split</span>
+                          <div className="flex flex-row items-center justify-between gap-4">
+                            <div className="h-24 w-24 relative shrink-0">
+                               <ResponsiveContainer width="100%" height="100%">
+                                 <PieChart>
+                                   <Pie
+                                     data={muscleSplit}
+                                     cx="50%"
+                                     cy="50%"
+                                     innerRadius={30}
+                                     outerRadius={45}
+                                     paddingAngle={5}
+                                     dataKey="value"
+                                     stroke="none"
+                                   >
+                                     {muscleSplit.map((entry, index) => (
+                                       <Cell key={`cell-${index}`} fill={entry.color} />
+                                     ))}
+                                   </Pie>
+                                   <Tooltip 
+                                     contentStyle={{ backgroundColor: '#121212'}}
+                                     itemStyle={{ color: '#fff', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}
+                                   />
+                                 </PieChart>
+                               </ResponsiveContainer>
+                            </div>
+                            <div className="flex-1 grid grid-cols-2 gap-x-2 gap-y-2">
+                                {muscleSplit.map((item) => (
+                                  <div key={item.name} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                      <span className="text-[9px] font-bold text-text-dim uppercase tracking-wider truncate max-w-[40px]">{item.name}</span>
+                                    </div>
+                                    <span className="text-[9px] font-bold text-white ml-2">{item.value}%</span>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                     </div>
+                   )}
                 </div>
 
                 <WorkoutCalendar
