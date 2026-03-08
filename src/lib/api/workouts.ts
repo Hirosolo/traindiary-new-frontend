@@ -245,8 +245,14 @@ export async function logExerciseSet(payload: {
       actual_reps: payload.actualReps,
       duration: payload.duration,
       weight_kg: payload.weight_kg,
-      status: payload.status,
     }),
+  });
+}
+
+export async function syncWorkoutLogs(logs: any[]) {
+  return apiFetch(`/workouts/logs/sync`, {
+    method: "POST",
+    body: JSON.stringify({ logs }),
   });
 }
 

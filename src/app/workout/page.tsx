@@ -32,6 +32,7 @@ import {
   fetchSummary,
   addPlannedExercises,
   updateWorkoutsMonthCache,
+  syncWorkoutLogs,
 } from "@/lib/api/workouts";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -160,6 +161,7 @@ export default function WorkoutPage() {
             reps: isCardio ? 0 : (log.reps ?? log.actual_reps ?? log.rep ?? 0),
             duration: isCardio ? (log.duration ?? 0) : undefined,
             status: typeof log.status === 'string' ? log.status === 'COMPLETED' : (log.status ?? false),
+            notes: log.notes,
           }))
         : Array.from({ length: plannedSets }, (_, index) => ({
             id: `${detail.session_detail_id ?? detail.exercise_id ?? "planned"}-${index}`,
@@ -328,28 +330,27 @@ export default function WorkoutPage() {
     if (!selectedWorkout) return;
     setIsSavingWorkout(true);
     try {
-      // Sync sets logic (simplified for brevity, mirroring previous robust version)
-      for (const ex of selectedWorkout.exercises) {
-          for (const set of ex.sets) {
-              const numericId = Number(set.id);
-              if (Number.isFinite(numericId)) {
-                  await updateExerciseLog({
-                    logId: numericId,
-                    actualReps: ex.isCardio ? undefined : set.reps,
-                    duration: ex.isCardio ? set.duration ?? 0 : undefined,
-                    weight_kg: ex.isCardio ? 0 : set.weight,
-                    status: set.status,
-                  });
-              } else {
-                  await logExerciseSet({
-                    sessionDetailId: Number(ex.id),
-                    actualReps: ex.isCardio ? undefined : set.reps,
-                    duration: ex.isCardio ? set.duration ?? 0 : undefined,
-                    weight_kg: ex.isCardio ? 0 : set.weight,
-                    status: set.status,
-                  });
-              }
-          }
+      // 1. Collect all sets from all exercises to sync in one go
+      const logsToSync = selectedWorkout.exercises.flatMap(ex => 
+        ex.sets.map(set => {
+          const numericId = Number(set.id);
+          const isNew = !Number.isFinite(numericId);
+          
+          return {
+            set_id: isNew ? undefined : numericId,
+            session_detail_id: Number(ex.id),
+            actual_reps: ex.isCardio ? undefined : set.reps,
+            reps: ex.isCardio ? undefined : set.reps, // Support both field names
+            duration: ex.isCardio ? set.duration ?? 0 : undefined,
+            weight_kg: ex.isCardio ? 0 : set.weight,
+            status: set.status,
+            notes: set.notes,
+          };
+        })
+      );
+
+      if (logsToSync.length > 0) {
+        await syncWorkoutLogs(logsToSync);
       }
 
       // Check if all done

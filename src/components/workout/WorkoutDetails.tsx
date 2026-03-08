@@ -12,6 +12,7 @@ export interface ExerciseSet {
   reps: number;
   duration?: number;
   status?: boolean;
+  notes?: string;
 }
 
 export interface Exercise {
