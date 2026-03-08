@@ -100,12 +100,12 @@ export default function NavBar({
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setIsSpecsModalOpen(true)}
-                className="group relative flex justify-center p-2 rounded-md drop-shadow-xl bg-white/5 border border-white/10 text-white font-semibold hover:translate-y-3 hover:rounded-[50%] transition-all duration-500 hover:from-blue-600 hover:to-blue-800"
+                className="group relative flex justify-center p-2 rounded-md bg-white/5 border border-white/10 text-white font-semibold transition-colors hover:bg-white/10"
               >
-                <span className="material-symbols-outlined w-5 h-5 flex items-center justify-center text-[20px]">
+                <span className="material-symbols-outlined w-5 h-5 flex items-center justify-center text-[20px] group-hover:text-blue-500 transition-colors">
                   monitoring
                 </span>
-                <span className="absolute opacity-0 group-hover:opacity-100 group-hover:text-blue-500 group-hover:text-[10px] group-hover:font-black group-hover:uppercase group-hover:tracking-widest group-hover:-translate-y-10 duration-700 whitespace-nowrap">
+                <span className="absolute top-full mt-2 opacity-0 group-hover:opacity-100 text-blue-500 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-opacity pointer-events-none">
                   Update Specs
                 </span>
               </button>

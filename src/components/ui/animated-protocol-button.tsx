@@ -9,12 +9,12 @@ export default function AnimatedProtocolButton({ ...rest }: AnimatedProtocolButt
         <section className="flex justify-center items-center">
             <button
                 {...rest}
-                className="group relative flex justify-center p-2 rounded-md drop-shadow-xl bg-gradient-to-r from-gray-800 to-black text-white font-semibold hover:translate-y-3 hover:rounded-[50%] transition-all duration-500 hover:from-primary hover:to-primary-dark"
+                className="group relative flex justify-center p-2 rounded-md bg-white/5 border border-white/10 text-white font-semibold transition-colors hover:bg-white/10"
             >
-                <span className="material-symbols-outlined w-5 h-5 flex items-center justify-center text-[20px]">
+                <span className="material-symbols-outlined w-5 h-5 flex items-center justify-center text-[20px] group-hover:text-primary transition-colors">
                     bolt
                 </span>
-                <span className="absolute opacity-0 group-hover:opacity-100 group-hover:text-primary group-hover:text-[10px] group-hover:font-black group-hover:uppercase group-hover:tracking-widest group-hover:-translate-y-10 duration-700 whitespace-nowrap">
+                <span className="absolute top-full mt-2 opacity-0 group-hover:opacity-100 text-primary text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-opacity pointer-events-none">
                     Set Goal
                 </span>
             </button>

@@ -6,11 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 interface WaterTrackerProps {
   currentMl: number;
   goalMl: number;
-  onAddWater: (amount: number) => void;
+  onAddWater: (amount: number) => Promise<void> | void;
 }
 
 export default function WaterTracker({ currentMl, goalMl, onAddWater }: WaterTrackerProps) {
   const [customAmount, setCustomAmount] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
   const percentage = Math.min(100, (currentMl / goalMl) * 100);
 
   const presets = [
@@ -18,10 +19,19 @@ export default function WaterTracker({ currentMl, goalMl, onAddWater }: WaterTra
     { amount: 500, label: "Bottle", icon: "water_bottle" },
   ];
 
+  const executeAddWater = async (amount: number) => {
+    setIsAdding(true);
+    try {
+      await onAddWater(amount);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   const handleCustomAdd = () => {
     const val = parseInt(customAmount);
     if (!isNaN(val) && val > 0) {
-      onAddWater(val);
+      executeAddWater(val);
       setCustomAmount("");
     }
   };
@@ -53,12 +63,18 @@ export default function WaterTracker({ currentMl, goalMl, onAddWater }: WaterTra
           </motion.div>
 
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-display font-bold text-white tracking-tighter">
-              {currentMl}
-            </span>
-            <span className="text-[8px] font-black text-text-dim uppercase tracking-widest mt-1">
-              / {goalMl} ML
-            </span>
+            {isAdding ? (
+               <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+            ) : (
+               <>
+                 <span className="text-2xl font-display font-bold text-white tracking-tighter">
+                   {currentMl}
+                 </span>
+                 <span className="text-[8px] font-black text-text-dim uppercase tracking-widest mt-1">
+                   / {goalMl} ML
+                 </span>
+               </>
+            )}
           </div>
         </div>
       </div>
@@ -68,7 +84,8 @@ export default function WaterTracker({ currentMl, goalMl, onAddWater }: WaterTra
           {presets.map((preset) => (
             <button
               key={preset.amount}
-              onClick={() => onAddWater(preset.amount)}
+              disabled={isAdding}
+              onClick={() => executeAddWater(preset.amount)}
               className="flex-1 bg-white/5 border border-white/5 hover:border-primary/50 hover:bg-primary/10 p-3 rounded-2xl transition-all group flex flex-col items-center"
             >
               <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform mb-1 text-sm">
