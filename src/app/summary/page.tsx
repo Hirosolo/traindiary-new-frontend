@@ -46,7 +46,9 @@ type SummaryPoint = {
   fiber: number;
   sugar: number;
   gr: number;
+  water: number;
 };
+
 
 function formatDateLabel(d: Date) {
   const dd = `${d.getDate()}`.padStart(2, "0");
@@ -103,6 +105,7 @@ export default function SummaryPage() {
             fiber: Math.round(serverDay?.fiber || 0),
             sugar: Math.round(serverDay?.sugar || 0),
             gr: serverDay?.gr || 0,
+            water: serverDay?.water || 0,
           });
         }
         setDataset(newDataset);
@@ -439,8 +442,8 @@ export default function SummaryPage() {
                       <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                       <Line
                         type="monotone"
-                        dataKey="gr"
-                        name="Water"
+                        dataKey="water"
+                        name="Water (ml)"
                         stroke="var(--color-water)"
                         strokeWidth={4}
                         dot={{ r: 4, fill: "var(--color-water)", strokeWidth: 0 }}
