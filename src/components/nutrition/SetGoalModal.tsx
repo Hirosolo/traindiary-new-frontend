@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
   calculateGoalTargets, 
   saveNutritionGoal, 
@@ -18,8 +17,6 @@ interface SetGoalModalProps {
 }
 
 const STEPS = [
-  { id: "biodata", title: "Your Bio" },
-  { id: "activity", title: "Lifestyle" },
   { id: "objective", title: "Objective" },
   { id: "review", title: "Plan" }
 ];
@@ -46,6 +43,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
   useEffect(() => {
     if (isOpen) {
       loadLatestMetrics();
+      setCurrentStep(0);
     }
   }, [isOpen]);
 
@@ -64,7 +62,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
   };
 
   const handleNext = async () => {
-    if (currentStep === 2) {
+    if (currentStep === 0) {
       // Before moving to review, calculate
       setIsCalculating(true);
       setError(null);
@@ -111,21 +109,13 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto w-screen h-screen">
       {/* Backdrop */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+      <div 
         onClick={onClose}
         className="absolute inset-0 bg-black/80 backdrop-blur-md"
       />
 
       {/* Modal */}
-      <motion.div 
-        initial={{ scale: 0.95, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative w-full max-w-xl bg-surface-dark border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-primary/10 max-h-[90vh] flex flex-col"
-      >
+      <div className="relative w-full max-w-xl bg-surface-dark border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-primary/10 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-8 pb-4">
           <div className="flex justify-between items-center mb-8">
@@ -135,7 +125,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
                 {STEPS.map((step, idx) => (
                   <div 
                     key={step.id} 
-                    className={`h-1 rounded-full transition-all duration-500 ${
+                    className={`h-1 rounded-full transition-all duration-300 ${
                       idx <= currentStep ? "w-8 bg-primary" : "w-4 bg-white/10"
                     }`}
                   />
@@ -152,226 +142,104 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
 
         {/* Content */}
         <div className="p-8 pt-4 min-h-[400px] overflow-y-auto custom-scrollbar">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ x: 20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -20, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
-              {currentStep === 0 && (
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="col-span-2 space-y-4">
-                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Biological Sex</label>
-                    <div className="flex gap-3">
-                      {['male', 'female'].map(s => (
-                        <button
-                          key={s}
-                          onClick={() => setFormData({...formData, sex: s as any})}
-                          className={`flex-1 py-4 rounded-2xl font-bold uppercase tracking-tight transition-all border ${
-                            formData.sex === s 
-                            ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" 
-                            : "bg-surface-card border-white/5 text-text-dim hover:border-white/10"
-                          }`}
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Age</label>
-                    <input 
-                      type="number" 
-                      value={formData.age}
-                      onChange={e => setFormData({...formData, age: parseInt(e.target.value)})}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-primary text-white font-display font-medium"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Height (cm)</label>
-                    <input 
-                      type="number" 
-                      value={formData.height_cm}
-                      onChange={e => setFormData({...formData, height_cm: parseInt(e.target.value)})}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-primary text-white font-display font-medium"
-                    />
-                  </div>
-
-                  <div className="col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Weight (kg)</label>
-                    <input 
-                      type="number" 
-                      step="0.1"
-                      value={formData.weight_kg}
-                      onChange={e => setFormData({...formData, weight_kg: parseFloat(e.target.value)})}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-primary text-white font-display font-medium"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 1 && (
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Activity Level</label>
-                    <div className="grid grid-cols-1 gap-3">
-                      {[
-                        { id: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise' },
-                        { id: 'light', label: 'Light', desc: '1–3 days/week' },
-                        { id: 'moderate', label: 'Moderate', desc: '3–5 days/week' },
-                        { id: 'heavy', label: 'Heavy', desc: '6–7 days/week' },
-                        { id: 'athlete', label: 'Athlete', desc: 'Intense training / Physical job' },
-                      ].map(level => (
-                        <button
-                          key={level.id}
-                          onClick={() => setFormData({...formData, activity_level: level.id as any})}
-                          className={`flex items-center justify-between p-5 rounded-2xl text-left transition-all border ${
-                            formData.activity_level === level.id 
-                            ? "bg-primary/10 border-primary" 
-                            : "bg-surface-card border-white/5 hover:border-white/10"
-                          }`}
-                        >
-                          <div>
-                            <p className={`font-bold uppercase tracking-tight ${formData.activity_level === level.id ? "text-primary" : "text-white"}`}>{level.label}</p>
-                            <p className="text-[10px] text-text-dim mt-0.5">{level.desc}</p>
-                          </div>
-                          {formData.activity_level === level.id && (
-                            <span className="material-symbols-outlined text-primary">check_circle</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Workout Days / Week</label>
-                    <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-2xl p-4 px-6">
-                      <button onClick={() => setFormData({...formData, workout_days_per_week: Math.max(0, (formData.workout_days_per_week || 0) - 1)})} className="text-white hover:text-primary transition-colors">
-                        <span className="material-symbols-outlined">remove_circle</span>
+          <div className="space-y-6">
+            {currentStep === 0 && (
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Primary Objective</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: 'cutting', label: 'Fat Loss', icon: 'local_fire_department', color: 'text-orange-500' },
+                      { id: 'lean_bulk', label: 'Muscle Gain', icon: 'fitness_center', color: 'text-blue-500' },
+                      { id: 'maintain', label: 'Maintenance', icon: 'balance', color: 'text-green-500' },
+                      { id: 'recomposition', label: 'Recomp', icon: 'refresh', color: 'text-purple-500' },
+                    ].map(goal => (
+                      <button
+                        key={goal.id}
+                        onClick={() => setFormData({...formData, goal_type: goal.id as any})}
+                        className={`flex flex-col items-center justify-center p-6 rounded-3xl transition-all border gap-3 ${
+                          formData.goal_type === goal.id 
+                          ? "bg-white/5 border-primary shadow-lg shadow-primary/5" 
+                          : "bg-surface-card border-white/5 hover:border-white/10"
+                        }`}
+                      >
+                        <span className={`material-symbols-outlined text-3xl ${formData.goal_type === goal.id ? goal.color : "text-text-dim"}`}>{goal.icon}</span>
+                        <p className={`text-xs font-bold uppercase tracking-widest ${formData.goal_type === goal.id ? "text-white" : "text-text-dim"}`}>{goal.label}</p>
                       </button>
-                      <span className="text-2xl font-display font-bold text-white">{formData.workout_days_per_week}</span>
-                      <button onClick={() => setFormData({...formData, workout_days_per_week: Math.min(7, (formData.workout_days_per_week || 0) + 1)})} className="text-white hover:text-primary transition-colors">
-                        <span className="material-symbols-outlined">add_circle</span>
-                      </button>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              )}
 
-              {currentStep === 2 && (
-                <div className="space-y-8">
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Primary Objective</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { id: 'cutting', label: 'Fat Loss', icon: 'local_fire_department', color: 'text-orange-500' },
-                        { id: 'lean_bulk', label: 'Muscle Gain', icon: 'fitness_center', color: 'text-blue-500' },
-                        { id: 'maintain', label: 'Maintenance', icon: 'balance', color: 'text-green-500' },
-                        { id: 'recomposition', label: 'Recomp', icon: 'refresh', color: 'text-purple-500' },
-                      ].map(goal => (
-                        <button
-                          key={goal.id}
-                          onClick={() => setFormData({...formData, goal_type: goal.id as any})}
-                          className={`flex flex-col items-center justify-center p-6 rounded-3xl transition-all border gap-3 ${
-                            formData.goal_type === goal.id 
-                            ? "bg-white/5 border-primary shadow-lg shadow-primary/5" 
-                            : "bg-surface-card border-white/5 hover:border-white/10"
-                          }`}
-                        >
-                          <span className={`material-symbols-outlined text-3xl ${formData.goal_type === goal.id ? goal.color : "text-text-dim"}`}>{goal.icon}</span>
-                          <p className={`text-xs font-bold uppercase tracking-widest ${formData.goal_type === goal.id ? "text-white" : "text-text-dim"}`}>{goal.label}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Intensity</label>
-                    <div className="flex gap-2">
-                       {['slow', 'moderate', 'aggressive'].map(speed => (
-                         <button
-                           key={speed}
-                           onClick={() => setFormData({...formData, goal_speed: speed as any})}
-                           className={`flex-1 py-4 rounded-2xl font-bold uppercase tracking-tight text-[10px] transition-all border ${
-                            formData.goal_speed === speed 
-                            ? "bg-primary border-primary text-white" 
-                            : "bg-surface-card border-white/5 text-text-dim hover:border-white/10"
-                          }`}
-                         >
-                           {speed}
-                         </button>
-                       ))}
-                    </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Intensity</label>
+                  <div className="flex gap-2">
+                     {['slow', 'moderate', 'aggressive'].map(speed => (
+                       <button
+                         key={speed}
+                         onClick={() => setFormData({...formData, goal_speed: speed as any})}
+                         className={`flex-1 py-4 rounded-2xl font-bold uppercase tracking-tight text-[10px] transition-all border ${
+                          formData.goal_speed === speed 
+                          ? "bg-primary border-primary text-white" 
+                          : "bg-surface-card border-white/5 text-text-dim hover:border-white/10"
+                        }`}
+                       >
+                         {speed}
+                       </button>
+                     ))}
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {currentStep === 3 && calcResult && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
-                      <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">BMR</p>
-                      <p className="text-xl font-display font-bold text-white mt-1">{calcResult.bmr} <span className="text-[10px] text-text-dim">kcal</span></p>
-                    </div>
-                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
-                      <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">TDEE</p>
-                      <p className="text-xl font-display font-bold text-white mt-1">{calcResult.tdee} <span className="text-[10px] text-text-dim">kcal</span></p>
-                    </div>
+            {currentStep === 1 && calcResult && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                    <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">BMR</p>
+                    <p className="text-xl font-display font-bold text-white mt-1">{calcResult.bmr} <span className="text-[10px] text-text-dim">kcal</span></p>
                   </div>
-
-                  <div className="p-8 rounded-[2rem] bg-gradient-to-br from-primary to-primary-dark relative overflow-hidden">
-                    <div className="relative z-10 text-center">
-                      <p className="text-[10px] text-white/70 font-bold uppercase tracking-[0.2em] mb-2">Target Protocol</p>
-                      <h4 className="text-5xl font-display font-black text-white italic">{calcResult.daily_calories}</h4>
-                      <p className="text-xs text-white/70 font-bold uppercase tracking-widest mt-1">Calories Per Day</p>
-                    </div>
-                    <div className="absolute top-0 right-0 p-8 opacity-20">
-                      <span className="material-symbols-outlined text-[120px]">bolt</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-surface-card border border-white/5 rounded-2xl p-4 text-center">
-                      <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest mb-1">Protein</p>
-                      <p className="text-lg font-display font-bold text-white">{calcResult.protein_g}g</p>
-                      <div className="w-full h-1 bg-purple-500/20 rounded-full mt-2">
-                        <div className="h-full bg-purple-500 rounded-full w-full" />
-                      </div>
-                    </div>
-                    <div className="bg-surface-card border border-white/5 rounded-2xl p-4 text-center">
-                      <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest mb-1">Carbs</p>
-                      <p className="text-lg font-display font-bold text-white">{calcResult.carbs_g}g</p>
-                      <div className="w-full h-1 bg-blue-500/20 rounded-full mt-2">
-                        <div className="h-full bg-blue-500 rounded-full w-full" />
-                      </div>
-                    </div>
-                    <div className="bg-surface-card border border-white/5 rounded-2xl p-4 text-center">
-                      <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest mb-1">Fat</p>
-                      <p className="text-lg font-display font-bold text-white">{calcResult.fat_g}g</p>
-                      <div className="w-full h-1 bg-orange-500/20 rounded-full mt-2">
-                        <div className="h-full bg-orange-500 rounded-full w-full" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-surface-card border border-white/5 rounded-2xl p-5 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-cyan-500">water_drop</span>
-                    </div>
-                    <div>
-                      <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">Hydration Target</p>
-                      <p className="text-xl font-display font-bold text-white">{(calcResult.hydration_ml / 1000).toFixed(2)} <span className="text-xs text-text-dim ml-1">Liters / Day</span></p>
-                    </div>
+                  <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                    <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">TDEE</p>
+                    <p className="text-xl font-display font-bold text-white mt-1">{calcResult.tdee} <span className="text-[10px] text-text-dim">kcal</span></p>
                   </div>
                 </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+
+                <div className="p-8 rounded-[2rem] bg-gradient-to-br from-primary to-primary-dark relative overflow-hidden text-center">
+                  <p className="text-[10px] text-white/70 font-bold uppercase tracking-[0.2em] mb-2 relative z-10">Target Protocol</p>
+                  <h4 className="text-5xl font-display font-black text-white italic relative z-10">{calcResult.daily_calories}</h4>
+                  <p className="text-xs text-white/70 font-bold uppercase tracking-widest mt-1 relative z-10">Calories Per Day</p>
+                  <div className="absolute top-0 right-0 p-8 opacity-20">
+                    <span className="material-symbols-outlined text-[120px]">bolt</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-surface-card border border-white/5 rounded-2xl p-4 text-center">
+                    <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest mb-1">Protein</p>
+                    <p className="text-lg font-display font-bold text-white">{calcResult.protein_g}g</p>
+                  </div>
+                  <div className="bg-surface-card border border-white/5 rounded-2xl p-4 text-center">
+                    <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest mb-1">Carbs</p>
+                    <p className="text-lg font-display font-bold text-white">{calcResult.carbs_g}g</p>
+                  </div>
+                  <div className="bg-surface-card border border-white/5 rounded-2xl p-4 text-center">
+                    <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest mb-1">Fat</p>
+                    <p className="text-lg font-display font-bold text-white">{calcResult.fat_g}g</p>
+                  </div>
+                </div>
+
+                <div className="bg-surface-card border border-white/5 rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-cyan-500">water_drop</span>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">Hydration Target</p>
+                    <p className="text-xl font-display font-bold text-white">{(calcResult.hydration_ml / 1000).toFixed(2)} <span className="text-xs text-text-dim ml-1">Liters / Day</span></p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
@@ -395,7 +263,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
               {isCalculating ? (
                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
-                <>Next Step <span className="material-symbols-outlined text-sm">arrow_forward</span></>
+                <>Generate Plan <span className="material-symbols-outlined text-sm">arrow_forward</span></>
               )}
             </button>
           ) : (
@@ -407,7 +275,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
               {isSaving ? (
                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
-                <>Commit Goal <span className="material-symbols-outlined text-sm">auto_awesome</span></>
+                <>Commit Goal <span className="material-symbols-outlined text-sm">bolt</span></>
               )}
             </button>
           )}
@@ -418,7 +286,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
             <p className="text-[10px] text-red-500 font-bold text-center uppercase tracking-widest">{error}</p>
           </div>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }

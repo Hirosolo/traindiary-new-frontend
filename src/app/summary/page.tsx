@@ -7,7 +7,6 @@ import { CalendarLume } from "@/components/ui/calendar-lume";
 import NavBar from "@/components/ui/navbar";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { fetchSummary } from "@/lib/api/workouts";
-import SetGoalModal from "@/components/nutrition/SetGoalModal";
 
 type WorkoutExerciseData = {
   name: string;
@@ -72,7 +71,6 @@ export default function SummaryPage() {
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
   const [workoutData, setWorkoutData] = useState<WorkoutExerciseData[]>([]);
   const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(false);
-  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   
   // Fetch summary data
   const loadSummaryData = useCallback(async () => {
@@ -203,19 +201,6 @@ export default function SummaryPage() {
               )}
             </div>
 
-            {/* Set Goal Button */}
-            <button
-               onClick={() => setIsGoalModalOpen(true)}
-               className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-4 flex items-center gap-4 hover:bg-primary/20 transition-all group"
-            >
-               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined text-white text-xl">auto_awesome</span>
-               </div>
-               <div className="text-left">
-                  <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Target Protocol</p>
-                  <p className="text-sm font-bold text-white uppercase tracking-tight">Set New Goal</p>
-               </div>
-            </button>
           </div>
         </div>
 
@@ -589,12 +574,6 @@ export default function SummaryPage() {
         </div>
       </main>
 
-      {/* Modals */}
-      <SetGoalModal 
-        isOpen={isGoalModalOpen} 
-        onClose={() => setIsGoalModalOpen(false)}
-        onSuccess={() => loadSummaryData()}
-      />
     </div>
   );
 }

@@ -282,34 +282,12 @@ export default function NutritionPage() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-8">
+            <div>
                 <DailyMealList 
                   meals={meals} 
                   onMealClick={handleMealClick} 
                 />
-            </div>
-            <div className="flex flex-col gap-8">
-                <button 
-                  onClick={async () => {
-                    const weight = prompt("Enter current weight (kg):");
-                    if (weight && !isNaN(Number(weight))) {
-                        try {
-                            await saveUserMetric({ weight_kg: Number(weight) });
-                            alert("Weight logged successfully. This will not affect your current protocol targets.");
-                        } catch (e) {
-                            setErrorMessage("Failed to update weight");
-                        }
-                    }
-                  }}
-                  className="w-full bg-white/5 border border-dashed border-white/20 p-8 rounded-[2rem] flex flex-row items-center justify-center gap-6 hover:bg-white/10 transition-all text-text-dim hover:text-white"
-                >
-                    <span className="material-symbols-outlined text-3xl">monitor_weight</span>
-                    <div className="text-left">
-                        <p className="text-[10px] font-black uppercase tracking-widest">Update Specs</p>
-                        <p className="text-[8px] font-bold text-text-dim uppercase mt-0.5">Log Weight/BF% Today</p>
-                    </div>
-                </button>
             </div>
         </div>
 

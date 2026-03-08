@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { motion, useScroll, useMotionValueEvent } from "motion/react";
 import { useAuth } from "@/contexts/AuthContext";
 import SetGoalModal from "@/components/nutrition/SetGoalModal";
+import UpdateSpecsModal from "@/components/nutrition/UpdateSpecsModal";
 import AnimatedProtocolButton from "@/components/ui/animated-protocol-button";
 
 interface NavItem {
@@ -33,6 +34,7 @@ export default function NavBar({
 }: AnimatedFixedNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [isSpecsModalOpen, setIsSpecsModalOpen] = useState(false);
   const { scrollY } = useScroll();
   const [elevated, setElevated] = useState(false);
   const pathname = usePathname();
@@ -95,9 +97,22 @@ export default function NavBar({
             search
           </button>
           {user && (
-            <AnimatedProtocolButton 
-              onClick={() => setIsGoalModalOpen(true)}
-            />
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setIsSpecsModalOpen(true)}
+                className="group relative flex justify-center p-2 rounded-md drop-shadow-xl bg-white/5 border border-white/10 text-white font-semibold hover:translate-y-3 hover:rounded-[50%] transition-all duration-500 hover:from-blue-600 hover:to-blue-800"
+              >
+                <span className="material-symbols-outlined w-5 h-5 flex items-center justify-center text-[20px]">
+                  monitoring
+                </span>
+                <span className="absolute opacity-0 group-hover:opacity-100 group-hover:text-blue-500 group-hover:text-[10px] group-hover:font-black group-hover:uppercase group-hover:tracking-widest group-hover:-translate-y-10 duration-700 whitespace-nowrap">
+                  Update Specs
+                </span>
+              </button>
+              <AnimatedProtocolButton 
+                onClick={() => setIsGoalModalOpen(true)}
+              />
+            </div>
           )}
           {!user ? (
             <Link href="/signin" className="hidden sm:block bg-white text-black text-[11px] font-bold px-6 py-2 uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
@@ -161,16 +176,28 @@ export default function NavBar({
               </Link>
             ))}
             {user && (
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setIsGoalModalOpen(true);
-                }}
-                className="flex items-center gap-4 text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-primary text-left"
-              >
-                <span className="material-symbols-outlined text-4xl">bolt</span>
-                Set Goal
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsGoalModalOpen(true);
+                  }}
+                  className="flex items-center gap-4 text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-primary text-left"
+                >
+                  <span className="material-symbols-outlined text-4xl">bolt</span>
+                  Set Goal
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsSpecsModalOpen(true);
+                  }}
+                  className="flex items-center gap-4 text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-blue-500 text-left"
+                >
+                  <span className="material-symbols-outlined text-4xl">monitoring</span>
+                  Update Specs
+                </button>
+              </>
             )}
           </div>
           <div className="mt-auto pb-8">
@@ -188,6 +215,7 @@ export default function NavBar({
       </div>
 
       <SetGoalModal isOpen={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} />
+      <UpdateSpecsModal isOpen={isSpecsModalOpen} onClose={() => setIsSpecsModalOpen(false)} />
     </motion.nav>
   );
 }
