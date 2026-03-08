@@ -208,6 +208,8 @@ export async function fetchMeals(
   return { data: result } as ApiMealsResponse;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface NutritionGoal {
   goal_id?: number;
   calories_target: number;
@@ -219,9 +221,82 @@ export interface NutritionGoal {
   start_date: string;
 }
 
+// ─── Goal and Water Cache Helpers ─────────────────────────────────────────────
+
+function goalCacheKey(date: string, userId: number | string) {
+  return `goal_date_${date}_${userId}`;
+}
+function goalFetchedKey(date: string, userId: number | string) {
+  return `goal_fetched_${date}_${userId}`;
+}
+
+function waterCacheKey(date: string, userId: number | string) {
+  return `water_date_${date}_${userId}`;
+}
+function waterFetchedKey(date: string, userId: number | string) {
+  return `water_fetched_${date}_${userId}`;
+}
+
+function getGoalCache(date: string, userId: number | string): NutritionGoal | null {
+  if (typeof window === 'undefined') return null;
+  const fetched = localStorage.getItem(goalFetchedKey(date, userId));
+  if (fetched !== getTodayDateStr()) return null;
+  const raw = localStorage.getItem(goalCacheKey(date, userId));
+  if (!raw) return null;
+  try { return JSON.parse(raw) as NutritionGoal; } catch { return null; }
+}
+
+function setGoalCache(date: string, userId: number | string, goal: NutritionGoal): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(goalCacheKey(date, userId), JSON.stringify(goal));
+  localStorage.setItem(goalFetchedKey(date, userId), getTodayDateStr());
+}
+
+function invalidateGoalCache(date: string, userId: number | string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(goalCacheKey(date, userId));
+  localStorage.removeItem(goalFetchedKey(date, userId));
+}
+
+function getWaterCache(date: string, userId: number | string): { logs: any[]; total_ml: number } | null {
+  if (typeof window === 'undefined') return null;
+  const fetched = localStorage.getItem(waterFetchedKey(date, userId));
+  if (fetched !== getTodayDateStr()) return null;
+  const raw = localStorage.getItem(waterCacheKey(date, userId));
+  if (!raw) return null;
+  try { return JSON.parse(raw) as { logs: any[]; total_ml: number }; } catch { return null; }
+}
+
+function setWaterCache(date: string, userId: number | string, data: { logs: any[]; total_ml: number }): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(waterCacheKey(date, userId), JSON.stringify(data));
+  localStorage.setItem(waterFetchedKey(date, userId), getTodayDateStr());
+}
+
+function invalidateWaterCache(date: string, userId: number | string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(waterCacheKey(date, userId));
+  localStorage.removeItem(waterFetchedKey(date, userId));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function fetchNutritionGoal(date: string): Promise<NutritionGoal | null> {
+  const userId = getUserIdFromToken() ?? 'anon';
+  
+  // Try cache first
+  const cached = getGoalCache(date, userId);
+  if (cached) {
+    console.log('[fetchNutritionGoal] served from cache', { date });
+    return cached;
+  }
+
   try {
-    return await apiFetch<NutritionGoal>(`/nutrition/goals?date=${date}`);
+    const data = await apiFetch<NutritionGoal>(`/nutrition/goals?date=${date}`);
+    if (data) {
+      setGoalCache(date, userId, data);
+    }
+    return data;
   } catch (error) {
     return null;
   }
@@ -261,49 +336,73 @@ export async function calculateGoalTargets(params: GoalCalculationParams): Promi
 }
 
 export async function saveNutritionGoal(params: GoalCalculationParams & GoalCalculationResult): Promise<any> {
-  return apiFetch("/nutrition/goals", {
-    method: "POST",
-    body: JSON.stringify({
-      ...params,
-      calories_target: params.daily_calories,
-      protein_target_g: params.protein_g,
-      carbs_target_g: params.carbs_g,
-      fat_target_g: params.fat_g,
-      hydration_target_ml: params.hydration_ml,
-    }),
-  });
+    const userId = getUserIdFromToken() ?? 'anon';
+    const result = await apiFetch("/nutrition/goals", {
+        method: "POST",
+        body: JSON.stringify({
+            ...params,
+            calories_target: params.daily_calories,
+            protein_target_g: params.protein_g,
+            carbs_target_g: params.carbs_g,
+            fat_target_g: params.fat_g,
+            hydration_target_ml: params.hydration_ml,
+        }),
+    });
+    
+    // Invalidate goal cache for today (or the targeted date if we had one)
+    invalidateGoalCache(getTodayDateStr(), userId);
+    return result;
 }
 
 export async function fetchLatestMetrics(): Promise<MetricData | null> {
-  const response = await fetch(`${API_BASE}/nutrition/metrics/latest`);
-  if (!response.ok) return null;
-  const result = await response.json();
-  return result.data;
+  try {
+    return await apiFetch<MetricData>("/nutrition/metrics/latest");
+  } catch (error) {
+    console.error("Failed to fetch latest metrics", error);
+    return null;
+  }
 }
 
 export async function saveUserMetric(metrics: Partial<MetricData>): Promise<void> {
-  const response = await fetch(`${API_BASE}/nutrition/metrics`, {
+  await apiFetch("/nutrition/metrics", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(metrics),
   });
-  if (!response.ok) throw new Error("Failed to save metrics");
 }
 
 export async function fetchWaterDaily(date: string): Promise<{ logs: any[]; total_ml: number }> {
-    const response = await fetch(`${API_BASE}/nutrition/water?date=${date}`);
-    if (!response.ok) return { logs: [], total_ml: 0 };
-    const result = await response.json();
-    return result.data;
+    const userId = getUserIdFromToken() ?? 'anon';
+
+    // Try cache first
+    const cached = getWaterCache(date, userId);
+    if (cached) {
+        console.log('[fetchWaterDaily] served from cache', { date });
+        return cached;
+    }
+
+    try {
+        const data = await apiFetch<{ logs: any[]; total_ml: number }>(`/nutrition/water?date=${date}`);
+        if (data) {
+            setWaterCache(date, userId, data);
+        }
+        return data ?? { logs: [], total_ml: 0 };
+    } catch (error) {
+        console.error("Failed to fetch water daily", error);
+        return { logs: [], total_ml: 0 };
+    }
 }
 
 export async function logWater(amount_ml: number, date?: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/nutrition/water`, {
+    const userId = getUserIdFromToken() ?? 'anon';
+    const targetDate = date ?? getTodayDateStr();
+
+    await apiFetch(`/nutrition/water`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount_ml, date }),
+        body: JSON.stringify({ amount_ml, date: targetDate }),
     });
-    if (!response.ok) throw new Error("Failed to log water");
+
+    // Invalidate water cache for the target date
+    invalidateWaterCache(targetDate, userId);
 }
 
 

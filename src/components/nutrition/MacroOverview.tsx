@@ -93,10 +93,6 @@ export default function MacroOverview({ current, goals }: MacroOverviewProps) {
          <ProgressBar label="Carbohydrates" current={current.carbs} goal={goals.carbs} color="#ef4444" unit="g" />
          <ProgressBar label="Total Fats" current={current.fats} goal={goals.fats} color="#10b981" unit="g" />
          <ProgressBar label="Dietary Fiber" current={current.fiber} goal={goals.fiber} color="#f59e0b" unit="g" />
-         <ProgressBar label="Hydration" current={current.water} goal={goals.water} color="#06b6d4" unit="ml" />
-         <div className="bg-white/5 rounded-2xl p-4 flex items-center justify-center border border-dashed border-white/10">
-            <span className="text-[10px] font-black uppercase text-white/20 tracking-widest italic">Performance Fueling Optimized</span>
-         </div>
       </div>
     </div>
   );

@@ -189,7 +189,7 @@ export async function createWorkoutSession(payload: {
     duration?: number;
   }>;
 }) {
-  return apiFetch<{ session_id?: number; id?: number }>(`/workouts`, {
+  const result = await apiFetch<{ session_id?: number; id?: number }>(`/workouts`, {
     method: "POST",
     body: JSON.stringify({
       scheduled_date: payload.scheduledDate,
@@ -204,6 +204,12 @@ export async function createWorkoutSession(payload: {
       })),
     }),
   });
+
+  // Invalidate summary cache for the month of the scheduled date
+  const userId = getUserIdFromToken() ?? 'anon';
+  invalidateSummaryCache(payload.scheduledDate.slice(0, 7), userId);
+
+  return result;
 }
 
 export async function addPlannedExercises(payload: {
@@ -214,12 +220,18 @@ export async function addPlannedExercises(payload: {
     planned_reps?: number;
   }>
 }) {
-  return apiFetch(`/workouts/${payload.sessionId}/session-details`, {
+  const result = await apiFetch(`/workouts/${payload.sessionId}/session-details`, {
     method: "POST",
     body: JSON.stringify({
       exercises: payload.exercises,
     }),
   });
+
+  // Invalidate summary cache for today's month (simplest assumption)
+  const userId = getUserIdFromToken() ?? 'anon';
+  invalidateSummaryCache(getTodayDateStr().slice(0, 7), userId);
+
+  return result;
 }
 
 export async function updateExerciseLog(payload: {
@@ -229,7 +241,7 @@ export async function updateExerciseLog(payload: {
   weight_kg?: number | null;
   status?: boolean;
 }) {
-  return apiFetch(`/workouts/logs`, {
+  const result = await apiFetch(`/workouts/logs`, {
     method: "PUT",
     body: JSON.stringify({
       log_id: Number(payload.logId),
@@ -239,6 +251,12 @@ export async function updateExerciseLog(payload: {
       status: payload.status,
     }),
   });
+
+  // Invalidate summary cache
+  const userId = getUserIdFromToken() ?? 'anon';
+  invalidateSummaryCache(getTodayDateStr().slice(0, 7), userId);
+
+  return result;
 }
 
 export async function logExerciseSet(payload: {
@@ -248,7 +266,7 @@ export async function logExerciseSet(payload: {
   weight_kg?: number;
   status?: boolean;
 }) {
-  return apiFetch(`/workouts/logs`, {
+  const result = await apiFetch(`/workouts/logs`, {
     method: "POST",
     body: JSON.stringify({
       session_detail_id: Number(payload.sessionDetailId),
@@ -257,20 +275,38 @@ export async function logExerciseSet(payload: {
       weight_kg: payload.weight_kg,
     }),
   });
+
+  // Invalidate summary cache
+  const userId = getUserIdFromToken() ?? 'anon';
+  invalidateSummaryCache(getTodayDateStr().slice(0, 7), userId);
+
+  return result;
 }
 
 export async function syncWorkoutLogs(sessionId: string | number, logs: any[]) {
-  return apiFetch(`/workouts/logs/sync`, {
+  const result = await apiFetch(`/workouts/logs/sync`, {
     method: "POST",
     body: JSON.stringify({ sessionId, logs }),
   });
+  
+  // Invalidate summary cache for today's month
+  const userId = getUserIdFromToken() ?? 'anon';
+  invalidateSummaryCache(getTodayDateStr().slice(0, 7), userId);
+  
+  return result;
 }
 
 export async function completeWorkoutSession(sessionId: string | number) {
-  return apiFetch(`/workouts/${sessionId}`, {
+  const result = await apiFetch(`/workouts/${sessionId}`, {
     method: "PUT",
     body: JSON.stringify({ status: 'COMPLETED' }),
   });
+
+  // Invalidate summary cache for today's month
+  const userId = getUserIdFromToken() ?? 'anon';
+  invalidateSummaryCache(getTodayDateStr().slice(0, 7), userId);
+
+  return result;
 }
 
 export async function updateSessionDetailStatus(
@@ -299,9 +335,15 @@ export async function updateSessionDetailPlannedSets(
 }
 
 export async function deleteWorkoutSession(sessionId: string | number) {
-  return apiFetch(`/workouts/${sessionId}`, {
+  const result = await apiFetch(`/workouts/${sessionId}`, {
     method: "DELETE",
   });
+
+  // Invalidate summary cache for today's month
+  const userId = getUserIdFromToken() ?? 'anon';
+  invalidateSummaryCache(getTodayDateStr().slice(0, 7), userId);
+
+  return result;
 }
 
 export async function deleteSessionDetail(sessionId: string | number, sessionDetailId: string | number) {
@@ -423,7 +465,66 @@ export interface SummaryPayload {
   }>;
 }
 
+// ─── Summary Monthly Cache Helpers ───────────────────────────────────────────
+
+function summaryCacheKey(month: string, userId: number | string) {
+  return `summary_month_${month}_${userId}`;
+}
+function summaryFetchedKey(month: string, userId: number | string) {
+  return `summary_fetched_${month}_${userId}`;
+}
+
+function getSummaryCache(month: string, userId: number | string): SummaryPayload | null {
+  if (typeof window === 'undefined') return null;
+  const fetched = localStorage.getItem(summaryFetchedKey(month, userId));
+  if (fetched !== getTodayDateStr()) return null;
+  const raw = localStorage.getItem(summaryCacheKey(month, userId));
+  if (!raw) return null;
+  try { return JSON.parse(raw) as SummaryPayload; } catch { return null; }
+}
+
+function setSummaryCache(month: string, userId: number | string, summary: SummaryPayload): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(summaryCacheKey(month, userId), JSON.stringify(summary));
+  localStorage.setItem(summaryFetchedKey(month, userId), getTodayDateStr());
+}
+
+export function invalidateSummaryCache(month: string, userId: number | string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(summaryCacheKey(month, userId));
+  localStorage.removeItem(summaryFetchedKey(month, userId));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function fetchSummary(month: string): Promise<SummaryPayload> {
-  return apiFetch<SummaryPayload>(`/summary?month=${month}`);
+  const userId = getUserIdFromToken() ?? 'anon';
+  
+  const cached = getSummaryCache(month, userId);
+  if (cached) {
+    console.log('[fetchSummary] served from cache', { month });
+    return cached;
+  }
+
+  const data = await apiFetch<SummaryPayload>(`/summary?month=${month}`);
+  if (data) {
+    setSummaryCache(month, userId, data);
+  }
+  return data;
+}
+
+function getUserIdFromToken(): number | null {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("auth_token");
+  if (!token) return null;
+  
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload.user_id ?? payload.sub ?? payload.id ?? null;
+  } catch (error) {
+    return null;
+  }
 }
 

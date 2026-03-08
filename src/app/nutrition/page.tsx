@@ -242,7 +242,6 @@ export default function NutritionPage() {
         <section className="flex flex-col lg:flex-row justify-between items-center gap-8">
            <div className="text-center lg:text-left">
               <h1 className="text-4xl lg:text-5xl font-display font-bold uppercase italic tracking-tighter">Nutrition Terminal</h1>
-              <p className="text-[10px] font-black text-text-dim uppercase tracking-[0.3em] mt-2">Precision Fueling System Enabled</p>
            </div>
 
            <div className="bg-surface-dark border border-white/5 p-2 rounded-3xl flex gap-2 overflow-x-auto no-scrollbar max-w-full">
@@ -262,7 +261,26 @@ export default function NutritionPage() {
         </section>
 
         {/* DAILY OVERVIEW */}
-        <MacroOverview current={macros} goals={goals} />
+        <div className="grid lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3">
+             <MacroOverview current={macros} goals={goals} />
+          </div>
+          <div className="lg:col-span-1">
+              <WaterTracker 
+                  currentMl={macros.water} 
+                  goalMl={goals.water} 
+                  onAddWater={async (amount) => {
+                      try {
+                          const dateStr = selectedDate.toISOString().split('T')[0];
+                          await logWater(amount, dateStr);
+                          loadDailyData();
+                      } catch (e) {
+                          setErrorMessage("Failed to log hydration");
+                      }
+                  }} 
+              />
+          </div>
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
@@ -271,21 +289,7 @@ export default function NutritionPage() {
                   onMealClick={handleMealClick} 
                 />
             </div>
-            <div className="space-y-8">
-                <WaterTracker 
-                    currentMl={macros.water} 
-                    goalMl={goals.water} 
-                    onAddWater={async (amount) => {
-                        try {
-                            const dateStr = selectedDate.toISOString().split('T')[0];
-                            await logWater(amount, dateStr);
-                            loadDailyData();
-                        } catch (e) {
-                            setErrorMessage("Failed to log hydration");
-                        }
-                    }} 
-                />
-                
+            <div className="flex flex-col gap-8">
                 <button 
                   onClick={async () => {
                     const weight = prompt("Enter current weight (kg):");
@@ -298,12 +302,12 @@ export default function NutritionPage() {
                         }
                     }
                   }}
-                  className="w-full bg-white/5 border border-dashed border-white/20 p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 hover:bg-white/10 transition-all text-text-dim hover:text-white"
+                  className="w-full bg-white/5 border border-dashed border-white/20 p-8 rounded-[2rem] flex flex-row items-center justify-center gap-6 hover:bg-white/10 transition-all text-text-dim hover:text-white"
                 >
-                    <span className="material-symbols-outlined text-4xl">monitor_weight</span>
-                    <div className="text-center">
+                    <span className="material-symbols-outlined text-3xl">monitor_weight</span>
+                    <div className="text-left">
                         <p className="text-[10px] font-black uppercase tracking-widest">Update Specs</p>
-                        <p className="text-[8px] font-bold text-text-dim uppercase mt-1">Log Weight/BF% Today</p>
+                        <p className="text-[8px] font-bold text-text-dim uppercase mt-0.5">Log Weight/BF% Today</p>
                     </div>
                 </button>
             </div>
