@@ -488,7 +488,7 @@ export default function WorkoutPage() {
                         >
                             <span className="text-[8px] font-black uppercase tracking-widest">{d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
                             <span className="text-sm font-black mt-1">{d.getDate()}</span>
-                            {hasData && !isSelected && <div className="w-1 h-1 rounded-full bg-primary mt-1" />}
+                            {d.toDateString() === now.toDateString() && !isSelected && <div className="w-1 h-1 rounded-full bg-primary mt-1" />}
                         </button>
                     )
                 })}
