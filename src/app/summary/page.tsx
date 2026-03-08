@@ -65,40 +65,13 @@ export default function SummaryPage() {
   const [activeTab, setActiveTab] = useState<"nutrition" | "workout">("nutrition");
   const [nutritionGraphType, setNutritionGraphType] = useState<"all" | "hydration">("all");
   const [selectedExercise, setSelectedExercise] = useState<string>("");
-  const [userId, setUserId] = useState<number | null>(null);
   const [dataset, setDataset] = useState<SummaryPoint[]>([]);
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
   const [workoutData, setWorkoutData] = useState<WorkoutExerciseData[]>([]);
   const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(false);
   
-  // Fetch user ID on mount
+  // Fetch summary data
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const response = await fetch("/api/users/me", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-          },
-        });
-        if (response.ok) {
-          const resJson = await response.json();
-          const user = resJson.data;
-          const extractedUserId = user?.user_id ?? user?.id;
-          if (extractedUserId) {
-            setUserId(extractedUserId);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
-      }
-    };
-    loadUser();
-  }, []);
-
-  // Fetch summary data (meals and workouts)
-  useEffect(() => {
-    if (!userId) return;
-
     const loadSummaryData = async () => {
       setIsLoadingSummary(true);
       setIsLoadingWorkouts(true);
@@ -108,69 +81,42 @@ export default function SummaryPage() {
           Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
         };
 
-        // 1. Fetch Meals for monthly nutrition
-        const mealsRes = await fetch(`/api/meals?month=${monthParam}`, { headers });
-        const mealsData = await mealsRes.json();
-        const meals = mealsData.success ? (mealsData.data || []) : [];
-
-        // 2. Fetch Workouts for monthly workouts
-        const workoutsRes = await fetch(`/api/workouts?month=${monthParam}`, { headers });
-        const workoutsData = await workoutsRes.json();
-        const workouts = workoutsData.success ? (workoutsData.data || []) : [];
-
-        // 3. Build Daily Dataset
-        const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-        const newDataset: SummaryPoint[] = [];
-
-        for (let i = 1; i <= daysInMonth; i++) {
-          const dayStr = String(i).padStart(2, "0");
-          const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${dayStr}`;
-          const dayDate = new Date(selectedYear, selectedMonth, i);
+        const response = await fetch(`/api/summary?month=${monthParam}`, { headers });
+        const resJson = await response.json();
+        
+        if (resJson.success) {
+          const data = resJson.data;
           
-          const dayMeals = meals.filter((m: any) => (m.log_date || "").startsWith(dateStr));
-          const dayWorkout = workouts.find((w: any) => (w.scheduled_date || "").startsWith(dateStr) && w.status === 'COMPLETED');
+          // Build Daily Dataset for the chart
+          const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+          const newDataset: SummaryPoint[] = [];
 
-          newDataset.push({
-            label: dayStr,
-            dateLabel: formatDateLabel(dayDate),
-            workouts: dayWorkout ? 1 : 0,
-            kcal: dayMeals.reduce((sum: number, m: any) => sum + (m.total_calories || 0), 0),
-            protein: dayMeals.reduce((sum: number, m: any) => sum + (m.total_protein || 0), 0),
-            carbs: dayMeals.reduce((sum: number, m: any) => sum + (m.total_carbs || 0), 0),
-            fats: dayMeals.reduce((sum: number, m: any) => sum + (m.total_fat || 0), 0),
-            fiber: dayMeals.reduce((sum: number, m: any) => sum + (m.total_fibers || 0), 0),
-            sugar: dayMeals.reduce((sum: number, m: any) => sum + (m.total_sugars || 0), 0),
-            gr: dayWorkout ? (dayWorkout.gr_score || 0) : 0,
-          });
-        }
-        setDataset(newDataset);
+          for (let i = 1; i <= daysInMonth; i++) {
+            const dayStr = String(i).padStart(2, "0");
+            const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${dayStr}`;
+            const dayDate = new Date(selectedYear, selectedMonth, i);
+            
+            const serverDay = (data.daily_data || []).find((d: any) => d.date === dateStr);
 
-        // 4. Build Workout Exercise Aggregate Data
-        const exerciseMap: Record<string, WorkoutExerciseData> = {};
-        workouts.forEach((session: any) => {
-          if (session.session_details && Array.isArray(session.session_details)) {
-            session.session_details.forEach((detail: any) => {
-              const exerciseName = detail.exercises?.name || `Exercise ${detail.exercise_id}`;
-              if (!exerciseMap[exerciseName]) {
-                exerciseMap[exerciseName] = { name: exerciseName, count: 0, volume: 0 };
-              }
-              if (detail.exercise_logs && Array.isArray(detail.exercise_logs)) {
-                detail.exercise_logs.forEach((log: any) => {
-                  exerciseMap[exerciseName].count += 1;
-                  // Correctly sum volume per set
-                  exerciseMap[exerciseName].volume += (log.reps || 0) * (log.weight_kg || 0);
-                });
-              }
+            newDataset.push({
+              label: dayStr,
+              dateLabel: formatDateLabel(dayDate),
+              workouts: serverDay?.workouts || 0,
+              kcal: Math.round(serverDay?.kcal || 0),
+              protein: Math.round(serverDay?.protein || 0),
+              carbs: Math.round(serverDay?.carbs || 0),
+              fats: Math.round(serverDay?.fats || 0),
+              fiber: Math.round(serverDay?.fiber || 0),
+              sugar: Math.round(serverDay?.sugar || 0),
+              gr: serverDay?.gr || 0,
             });
           }
-        });
-
-        const chartData = Object.values(exerciseMap);
-        setWorkoutData(chartData);
-        
-        // Set first exercise as default if needed
-        if (chartData.length > 0 && !selectedExercise) {
-          setSelectedExercise(chartData[0].name);
+          setDataset(newDataset);
+          setWorkoutData(data.exercise_data || []);
+          
+          if (data.exercise_data?.length > 0 && !selectedExercise) {
+            setSelectedExercise(data.exercise_data[0].name);
+          }
         }
       } catch (error) {
         console.error("Failed to load summary data:", error);
@@ -181,7 +127,7 @@ export default function SummaryPage() {
     };
 
     loadSummaryData();
-  }, [userId, selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear]);
 
   const handleMonthYearChange = (year: number, month: number) => {
     setSelectedYear(year);
