@@ -109,7 +109,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto w-screen h-screen">
       {/* Backdrop */}
       <motion.div 
         initial={{ opacity: 0 }}
@@ -124,7 +124,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative w-full max-w-xl bg-surface-dark border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-primary/10"
+        className="relative w-full max-w-xl bg-surface-dark border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-primary/10 max-h-[90vh] flex flex-col"
       >
         {/* Header */}
         <div className="p-8 pb-4">
@@ -151,7 +151,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
         </div>
 
         {/* Content */}
-        <div className="p-8 pt-4 min-h-[400px]">
+        <div className="p-8 pt-4 min-h-[400px] overflow-y-auto custom-scrollbar">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}

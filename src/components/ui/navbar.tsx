@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { motion, useScroll, useMotionValueEvent } from "motion/react";
 import { useAuth } from "@/contexts/AuthContext";
 import SetGoalModal from "@/components/nutrition/SetGoalModal";
+import AnimatedProtocolButton from "@/components/ui/animated-protocol-button";
 
 interface NavItem {
   name: string;
@@ -94,13 +95,9 @@ export default function NavBar({
             search
           </button>
           {user && (
-            <button 
+            <AnimatedProtocolButton 
               onClick={() => setIsGoalModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full hover:bg-primary/20 transition-all group"
-            >
-              <span className="material-symbols-outlined text-[16px] text-primary group-hover:rotate-12 transition-transform">bolt</span>
-              <span className="text-[10px] font-bold text-white uppercase tracking-widest hidden md:block">Protocol</span>
-            </button>
+            />
           )}
           {!user ? (
             <Link href="/signin" className="hidden sm:block bg-white text-black text-[11px] font-bold px-6 py-2 uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
