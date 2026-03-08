@@ -17,8 +17,8 @@ interface SetGoalModalProps {
 }
 
 const STEPS = [
-  { id: "objective", title: "Objective" },
-  { id: "review", title: "Plan" }
+  { id: "goal", title: "goal" },
+  { id: "macros", title: "macros" }
 ];
 
 export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModalProps) {
@@ -119,7 +119,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
         <div className="p-8 pb-4">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h2 className="text-2xl font-display font-bold text-white uppercase italic tracking-tight">Focus Protocol</h2>
+              <h2 className="text-2xl font-display font-bold text-white uppercase italic tracking-tight">Make goal</h2>
               <div className="flex gap-2 mt-2">
                 {STEPS.map((step, idx) => (
                   <div 
@@ -145,7 +145,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
             {currentStep === 0 && (
               <div className="space-y-8">
                 <div className="space-y-4">
-                  <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">Primary Objective</label>
+                  <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest block">What's your goal?</label>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { id: 'cutting', label: 'Fat Loss', icon: 'local_fire_department', color: 'text-orange-500' },

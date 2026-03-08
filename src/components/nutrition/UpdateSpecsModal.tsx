@@ -14,7 +14,7 @@ interface UpdateSpecsModalProps {
 }
 
 const STEPS = [
-  { id: "biodata", title: "Your Bio" },
+  { id: "biodata", title: "Your body" },
   { id: "activity", title: "Lifestyle" }
 ];
 
