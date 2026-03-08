@@ -6,6 +6,7 @@ import { ChartContainer, ChartTooltipContent } from "@/components/ui/line-chart"
 import { CalendarLume } from "@/components/ui/calendar-lume";
 import NavBar from "@/components/ui/navbar";
 import { CircularProgress } from "@/components/ui/circular-progress";
+import { fetchSummary } from "@/lib/api/workouts";
 
 type WorkoutExerciseData = {
   name: string;
@@ -77,16 +78,9 @@ export default function SummaryPage() {
       setIsLoadingWorkouts(true);
       try {
         const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
-        const headers = {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-        };
-
-        const response = await fetch(`/api/summary?month=${monthParam}`, { headers });
-        const resJson = await response.json();
+        const data = await fetchSummary(monthParam);
         
-        if (resJson.success) {
-          const data = resJson.data;
-          
+        if (data) {
           // Build Daily Dataset for the chart
           const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
           const newDataset: SummaryPoint[] = [];
@@ -114,8 +108,8 @@ export default function SummaryPage() {
           setDataset(newDataset);
           setWorkoutData(data.exercise_data || []);
           
-          if (data.exercise_data?.length > 0 && !selectedExercise) {
-            setSelectedExercise(data.exercise_data[0].name);
+          if ((data.exercise_data?.length ?? 0) > 0 && !selectedExercise) {
+            setSelectedExercise(data.exercise_data?.[0]?.name || "");
           }
         }
       } catch (error) {

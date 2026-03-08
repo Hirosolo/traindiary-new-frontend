@@ -404,9 +404,11 @@ export interface SummaryPayload {
   protein_avg?: number;
   carbs_avg?: number;
   fats_avg?: number;
+  daily_data?: any[];
+  exercise_data?: Array<{ name: string; count: number; volume: number }>;
 }
 
-export async function fetchSummary(userId: number, periodType: 'weekly' | 'monthly', periodStart: string): Promise<SummaryPayload> {
-  return apiFetch<SummaryPayload>(`/summary?user_id=${userId}&period_type=${periodType}&period_start=${periodStart}`);
+export async function fetchSummary(month: string): Promise<SummaryPayload> {
+  return apiFetch<SummaryPayload>(`/summary?month=${month}`);
 }
 

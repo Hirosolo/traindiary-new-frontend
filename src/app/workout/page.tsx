@@ -247,8 +247,7 @@ export default function WorkoutPage() {
       setWorkoutSessions(mapSessionsToDays(sessionsArray));
 
       // Fetch Dashboard Stats
-      const periodStart = `${selectedYear}-${String(selectedMonth+1).padStart(2, '0')}-01`;
-      const summary = await fetchSummary(userId, 'monthly', periodStart);
+      const summary = await fetchSummary(monthParam);
       
       setGrScore(summary.gr_score || 0);
       setGrScoreChange(summary.gr_score_change || 0);

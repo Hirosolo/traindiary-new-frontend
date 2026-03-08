@@ -19,7 +19,6 @@ import {
   updateMealsMonthCache,
   ApiMeal,
 } from "@/lib/api/nutrition";
-import { fetchSummary } from "@/lib/api/workouts"; // Summary includes nutrition
 import { motion, AnimatePresence } from "framer-motion";
 
 
