@@ -240,8 +240,15 @@ export default function NutritionPage() {
       <main className="max-w-6xl mx-auto p-4 lg:p-8 pt-20 lg:pt-32 space-y-12 pb-32">
         {/* HEADER & DATE PICKER */}
         <section className="flex flex-col lg:flex-row justify-between items-center gap-8">
-           <div className="text-center lg:text-left">
+                     <div className="text-center lg:text-left flex items-center gap-3">
               <h1 className="text-4xl lg:text-5xl font-display font-bold uppercase italic tracking-tighter">Nutrition Terminal</h1>
+                            <button
+                                onClick={() => loadDailyData()}
+                                className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
+                                aria-label="Refresh nutrition data"
+                            >
+                                <span className="material-symbols-outlined text-lg">refresh</span>
+                            </button>
            </div>
 
            <div className="bg-surface-dark border border-white/5 p-2 rounded-3xl flex gap-2 overflow-x-auto no-scrollbar max-w-full">

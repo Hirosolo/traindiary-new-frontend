@@ -158,13 +158,22 @@ export default function SummaryPage() {
       <main className="pt-16 pb-24 overflow-y-auto">
         <div className="p-5 space-y-6">
           {/* Header */}
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold font-display tracking-tight text-white uppercase italic leading-tight">
-              Summary
-            </h1>
-            <p className="text-[11px] text-text-dim mt-0.5 font-medium leading-relaxed">
-              Monthly performance snapshot.
-            </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold font-display tracking-tight text-white uppercase italic leading-tight">
+                Summary
+              </h1>
+              <p className="text-[11px] text-text-dim mt-0.5 font-medium leading-relaxed">
+                Monthly performance snapshot.
+              </p>
+            </div>
+            <button
+              onClick={() => loadSummaryData()}
+              className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
+              aria-label="Refresh summary data"
+            >
+              <span className="material-symbols-outlined text-lg">refresh</span>
+            </button>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">

@@ -475,6 +475,13 @@ export default function WorkoutPage() {
           <div className="lg:hidden p-4 border-b border-white/5 bg-surface-dark/50 backdrop-blur-md sticky top-0 z-20">
              <div className="flex justify-between items-center mb-4">
                <h1 className="text-2xl font-display font-bold uppercase italic tracking-tighter">Workout</h1>
+               <button
+                 onClick={() => refreshSessions()}
+                 className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
+                 aria-label="Refresh workout data"
+               >
+                 <span className="material-symbols-outlined text-base">refresh</span>
+               </button>
              </div>
              <div className="flex items-center justify-between gap-4 overflow-x-auto no-scrollbar pb-2">
                 {weekDays.map((d, i) => {
@@ -498,6 +505,15 @@ export default function WorkoutPage() {
           <div className="flex-1 overflow-y-auto no-scrollbar">
             {/* Main Calendar View Toggle or Hybrid */}
             <div className="p-4 lg:p-8 max-w-5xl mx-auto w-full">
+                <div className="hidden lg:flex justify-end mb-4">
+                  <button
+                    onClick={() => refreshSessions()}
+                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-sm">refresh</span>
+                    Refresh Data
+                  </button>
+                </div>
                 {/* Dashboard Stats (Tablet/Mobile Only) */}
                 <div className="lg:hidden grid grid-cols-2 gap-4 mb-8">
                    <div className="bg-surface-card p-5 rounded-3xl border border-white/5">
