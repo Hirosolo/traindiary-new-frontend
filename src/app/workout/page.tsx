@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import NavBar from "@/components/ui/navbar";
-import ActivityOverview from "@/components/workout/ActivityOverview";
 import WorkoutCalendar, {
   WorkoutSession,
   DayData,
@@ -479,17 +478,7 @@ export default function WorkoutPage() {
     <div className="bg-background-dark text-white min-h-screen font-body flex flex-col">
       <NavBar className="hidden lg:block shrink-0" />
 
-      <main className="flex-1 flex overflow-hidden pt-16 lg:pt-20">
-        <ActivityOverview
-          currentStreak={currentStreak}
-          grScore={grScore}
-          grScoreChange={grScoreChange}
-          muscleSplit={muscleSplit}
-          onManagePlanDays={() => {
-            setIsPlanDayManagerOpen(true);
-          }}
-        />
-
+      <main className="flex-1 overflow-hidden pt-16 lg:pt-20">
         <div className="flex-1 flex flex-col bg-background-dark relative">
           {/* MOBILE HEADER & DAY PICKER */}
           <div className="lg:hidden p-4 border-b border-white/5 bg-surface-dark/50 backdrop-blur-md sticky top-0 z-20">
@@ -518,6 +507,57 @@ export default function WorkoutPage() {
           <div className="flex-1 overflow-y-auto no-scrollbar">
             {/* Main Calendar View Toggle or Hybrid */}
             <div className="p-4 lg:p-8 max-w-5xl mx-auto w-full">
+                <div className="hidden lg:grid grid-cols-3 gap-4 mb-6">
+                   <div className="bg-surface-card p-5 rounded-3xl border border-white/5">
+                        <span className="text-[8px] font-black text-primary uppercase tracking-widest block mb-1">GR Score</span>
+                        <p className="text-3xl font-display font-bold">{grScore.toLocaleString()}</p>
+                        {grScoreChange !== 0 && (
+                          <p className={`text-[10px] mt-2 font-bold uppercase tracking-wider ${grScoreChange > 0 ? "text-emerald-500" : "text-red-500"}`}>
+                            {grScoreChange > 0 ? "+" : ""}{grScoreChange}% vs last month
+                          </p>
+                        )}
+                   </div>
+
+                   <div className="bg-surface-card p-5 rounded-3xl border border-white/5 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-3 opacity-10">
+                          <span className="material-symbols-outlined text-4xl text-orange-500">local_fire_department</span>
+                        </div>
+                        <span className="text-[8px] font-black text-orange-500 uppercase tracking-widest block mb-1">Longest Streak</span>
+                        <div className="flex items-end gap-1">
+                          <p className="text-3xl font-display font-bold">{currentStreak}</p>
+                          <span className="text-[10px] text-text-dim font-bold mb-1 uppercase tracking-wider">Days</span>
+                        </div>
+                   </div>
+
+                   <div className="bg-surface-card p-5 rounded-3xl border border-white/5">
+                        <span className="text-[8px] font-black text-text-dim uppercase tracking-widest block mb-3">Muscle Split (Weekly)</span>
+                        <div className="h-24 w-full relative">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={muscleSplit}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={20}
+                                outerRadius={40}
+                                paddingAngle={4}
+                                dataKey="value"
+                                stroke="none"
+                              >
+                                {muscleSplit.map((entry, index) => (
+                                  <Cell key={`desktop-muscle-cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip
+                                contentStyle={{ backgroundColor: '#121212' }}
+                                itemStyle={{ color: '#fff', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                   </div>
+                </div>
+
                 {/* Dashboard Stats (Tablet/Mobile Only) */}
                 <div className="lg:hidden grid grid-cols-2 gap-4 mb-8">
                    <div className="bg-surface-card p-5 rounded-3xl border border-white/5">
@@ -598,7 +638,7 @@ export default function WorkoutPage() {
         </div>
 
         {/* LOG BUTTON (MOBILE ONLY) */}
-          <div className="fixed bottom-24 right-6 z-40">
+            <div className="fixed bottom-24 right-6 z-40">
            <button 
              onClick={() => { setErrorMessage(null); setIsLogWorkoutModalOpen(true); }}
              className="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all active:scale-95"
@@ -607,6 +647,16 @@ export default function WorkoutPage() {
               <span className="material-symbols-outlined text-3xl">add</span>
            </button>
         </div>
+
+            <div className="hidden lg:block fixed bottom-44 right-6 z-40">
+              <button
+               onClick={() => setIsPlanDayManagerOpen(true)}
+               className="w-16 h-16 bg-white text-black rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all active:scale-95"
+               aria-label="Manage day plans"
+              >
+                <span className="material-symbols-outlined text-3xl">calendar_month</span>
+              </button>
+            </div>
 
         {/* DETAILS PANEL */}
         <AnimatePresence>
