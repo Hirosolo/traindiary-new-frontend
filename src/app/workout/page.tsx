@@ -51,11 +51,11 @@ type ApiMuscleSplit = {
 export default function WorkoutPage() {
   const { user } = useAuth();
   const userId = user?.user_id ?? user?.id ?? 1;
-  const now = new Date();
+  const today = useMemo(() => new Date(), []);
   
-  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedMonth, setSelectedMonth] = useState<number>(today.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(today.getFullYear());
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
   
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutDetailsData | null>(null);
   const [isLogWorkoutModalOpen, setIsLogWorkoutModalOpen] = useState(false);
@@ -90,14 +90,14 @@ export default function WorkoutPage() {
     const daysInMonth = lastDay.getDate();
     const today = new Date();
 
-    let startDay = firstDay.getDay() - 1; // Monday = 0
-    if (startDay < 0) startDay = 6;
+    // Convert JS weekday (Sun=0) to Monday-first index (Mon=0, Sun=6)
+    const startDay = (firstDay.getDay() + 6) % 7;
 
     const days: DayData[] = [];
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     
-    for (let i = startDay - 1; i >= 0; i--) {
-      days.push({ day: prevMonthLastDay - i, isCurrentMonth: false, sessions: [] });
+    for (let i = startDay; i > 0; i--) {
+      days.push({ day: prevMonthLastDay - (i - 1), isCurrentMonth: false, sessions: [] });
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -276,6 +276,12 @@ export default function WorkoutPage() {
   useEffect(() => {
     refreshSessions();
   }, [refreshSessions]);
+
+  useEffect(() => {
+    setSelectedDate(today);
+    setSelectedMonth(today.getMonth());
+    setSelectedYear(today.getFullYear());
+  }, [today]);
 
   const handleSessionClick = async (session: WorkoutSession, day: number) => {
     setIsDetailsLoading(true);
@@ -486,9 +492,9 @@ export default function WorkoutPage() {
                             onClick={() => setSelectedDate(d)}
                             className={`flex flex-col items-center min-w-[50px] p-3 rounded-2xl transition-all ${isSelected ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/20' : 'bg-white/5 text-text-dim'}`}
                         >
-                            <span className="text-[8px] font-black uppercase tracking-widest">{d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest">{d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2)}</span>
                             <span className="text-sm font-black mt-1">{d.getDate()}</span>
-                            {d.toDateString() === now.toDateString() && !isSelected && <div className="w-1 h-1 rounded-full bg-primary mt-1" />}
+                            {d.toDateString() === today.toDateString() && <div className="w-1 h-1 rounded-full bg-primary mt-1" />}
                         </button>
                     )
                 })}
@@ -527,7 +533,7 @@ export default function WorkoutPage() {
                                      data={muscleSplit}
                                      cx="50%"
                                      cy="50%"
-                                     innerRadius={30}
+                                     innerRadius={0}
                                      outerRadius={45}
                                      paddingAngle={5}
                                      dataKey="value"
