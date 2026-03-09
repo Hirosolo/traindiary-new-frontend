@@ -88,6 +88,31 @@ export interface ApiWorkoutSession {
   session_details?: ApiSessionDetail[];
 }
 
+export interface ApiWorkoutDayPlanExercise {
+  plan_exercise_id: number;
+  exercise_id: number;
+  planned_sets: number;
+  planned_reps: number;
+  sort_order?: number;
+  exercise?: {
+    exercise_id: number;
+    name: string;
+    category?: string;
+    type?: string;
+  };
+}
+
+export interface ApiWorkoutDayPlan {
+  plan_id: number;
+  user_id: number;
+  name: string;
+  type?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  exercises: ApiWorkoutDayPlanExercise[];
+}
+
 export type ApiWorkoutSessionsResponse = ApiWorkoutSession[] | { sessions: ApiWorkoutSession[] };
 
 // ─── Workout Sessions Monthly Cache Helpers ──────────────────────────────────
@@ -237,6 +262,37 @@ export async function addPlannedExercises(payload: {
   invalidateSummaryCache(getTodayDateStr().slice(0, 7), userId);
 
   return result;
+}
+
+export async function fetchWorkoutDayPlans(): Promise<ApiWorkoutDayPlan[]> {
+  return apiFetch<ApiWorkoutDayPlan[]>('/workout-day-plans');
+}
+
+export async function createWorkoutDayPlan(payload: {
+  name: string;
+  type?: string | null;
+  notes?: string | null;
+  exercises: Array<{
+    exercise_id: string | number;
+    planned_sets: number;
+    planned_reps: number;
+    sort_order?: number;
+  }>;
+}): Promise<ApiWorkoutDayPlan> {
+  return apiFetch<ApiWorkoutDayPlan>('/workout-day-plans', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: payload.name,
+      type: payload.type,
+      notes: payload.notes,
+      exercises: payload.exercises.map((item, index) => ({
+        exercise_id: Number(item.exercise_id),
+        planned_sets: Number(item.planned_sets),
+        planned_reps: Number(item.planned_reps),
+        sort_order: item.sort_order ?? index,
+      })),
+    }),
+  });
 }
 
 export async function updateExerciseLog(payload: {
