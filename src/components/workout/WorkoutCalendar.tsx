@@ -172,7 +172,7 @@ export default function WorkoutCalendar({
 
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-px bg-white/5 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-          {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
             <div
               key={d}
               className="bg-surface-dark py-4 text-center text-[9px] font-black text-text-dim uppercase tracking-widest border-b border-white/5"
