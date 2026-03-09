@@ -57,6 +57,7 @@ export default function NutritionPage() {
   const [selectedMeal, setSelectedMeal] = useState<any | null>(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [macros, setMacros] = useState({
@@ -97,13 +98,13 @@ export default function NutritionPage() {
     });
   }, []);
 
-  const loadDailyData = useCallback(async () => {
+    const loadDailyData = useCallback(async (forceRefresh = false) => {
     setIsLoading(true);
     try {
       const dateStr = selectedDate.toISOString().split('T')[0];
       
       // 1. Fetch Goals
-      const goalResponse = await fetchNutritionGoal(dateStr);
+            const goalResponse = await fetchNutritionGoal(dateStr, forceRefresh);
       if (goalResponse) {
           setGoals({
               calories: goalResponse.calories_target,
@@ -116,7 +117,7 @@ export default function NutritionPage() {
       }
 
       // 2. Fetch Meals for the whole month (cache-aware), then filter to selected day
-      const response = await fetchMeals(userId, dateStr, currentMonth);
+    const response = await fetchMeals(userId, dateStr, currentMonth, forceRefresh);
       const mealsArray = Array.isArray(response) ? response : (response as any).data || [];
       
       const detailedMeals = normaliseMeals(mealsArray);
@@ -134,7 +135,7 @@ export default function NutritionPage() {
       }), { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0, water: 0 });
 
       // 4. Fetch Water
-      const waterData = await fetchWaterDaily(dateStr);
+    const waterData = await fetchWaterDaily(dateStr, forceRefresh);
       dailyTotals.water = waterData.total_ml;
 
       setMacros(dailyTotals);
@@ -144,7 +145,16 @@ export default function NutritionPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, selectedDate]);
+    }, [userId, selectedDate, currentMonth, normaliseMeals]);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            await loadDailyData(true);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
   useEffect(() => {
     loadDailyData();
@@ -243,11 +253,11 @@ export default function NutritionPage() {
                      <div className="text-center lg:text-left flex items-center gap-3">
               <h1 className="text-4xl lg:text-5xl font-display font-bold uppercase italic tracking-tighter">Nutrition Terminal</h1>
                             <button
-                                onClick={() => loadDailyData()}
+                                onClick={handleRefresh}
                                 className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
                                 aria-label="Refresh nutrition data"
                             >
-                                <span className="material-symbols-outlined text-lg">refresh</span>
+                                <span className={`material-symbols-outlined text-lg ${isRefreshing ? "animate-spin" : ""}`}>refresh</span>
                             </button>
            </div>
 

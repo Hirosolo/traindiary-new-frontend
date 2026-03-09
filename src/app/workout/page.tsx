@@ -65,6 +65,7 @@ export default function WorkoutPage() {
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [isSavingWorkout, setIsSavingWorkout] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [grScore, setGrScore] = useState(0);
   const [grScoreChange, setGrScoreChange] = useState(0);
@@ -240,16 +241,16 @@ export default function WorkoutPage() {
     return record;
   }, []);
 
-  const refreshSessions = useCallback(async () => {
+  const refreshSessions = useCallback(async (forceRefresh = false) => {
     setIsLoadingSessions(true);
     try {
       const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
-      const response = await fetchWorkoutSessions(userId, monthParam);
+      const response = await fetchWorkoutSessions(userId, monthParam, undefined, forceRefresh);
       const sessionsArray = Array.isArray(response) ? response : (response as { sessions: ApiWorkoutSession[] }).sessions || [];
       setWorkoutSessions(mapSessionsToDays(sessionsArray));
 
       // Fetch Dashboard Stats
-      const summary = await fetchSummary(monthParam);
+      const summary = await fetchSummary(monthParam, forceRefresh);
       
       setGrScore(summary.gr_score || 0);
       setGrScoreChange(summary.gr_score_change || 0);
@@ -272,6 +273,15 @@ export default function WorkoutPage() {
       setIsLoadingSessions(false);
     }
   }, [userId, selectedMonth, selectedYear, mapSessionsToDays]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshSessions(true);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     refreshSessions();
@@ -476,11 +486,11 @@ export default function WorkoutPage() {
              <div className="flex justify-between items-center mb-4">
                <h1 className="text-2xl font-display font-bold uppercase italic tracking-tighter">Workout</h1>
                <button
-                 onClick={() => refreshSessions()}
+                 onClick={handleRefresh}
                  className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
                  aria-label="Refresh workout data"
                >
-                 <span className="material-symbols-outlined text-base">refresh</span>
+                 <span className={`material-symbols-outlined text-base ${isRefreshing ? "animate-spin" : ""}`}>refresh</span>
                </button>
              </div>
              <div className="flex items-center justify-between gap-4 overflow-x-auto no-scrollbar pb-2">
@@ -507,10 +517,10 @@ export default function WorkoutPage() {
             <div className="p-4 lg:p-8 max-w-5xl mx-auto w-full">
                 <div className="hidden lg:flex justify-end mb-4">
                   <button
-                    onClick={() => refreshSessions()}
+                    onClick={handleRefresh}
                     className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
                   >
-                    <span className="material-symbols-outlined text-sm">refresh</span>
+                    <span className={`material-symbols-outlined text-sm ${isRefreshing ? "animate-spin" : ""}`}>refresh</span>
                     Refresh Data
                   </button>
                 </div>

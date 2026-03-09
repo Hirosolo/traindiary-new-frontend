@@ -73,14 +73,15 @@ export default function SummaryPage() {
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
   const [workoutData, setWorkoutData] = useState<WorkoutExerciseData[]>([]);
   const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Fetch summary data
-  const loadSummaryData = useCallback(async () => {
+  const loadSummaryData = useCallback(async (forceRefresh = false) => {
     setIsLoadingSummary(true);
     setIsLoadingWorkouts(true);
     try {
       const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
-      const data = await fetchSummary(monthParam);
+      const data = await fetchSummary(monthParam, forceRefresh);
       
       if (data) {
         // Build Daily Dataset for the chart
@@ -128,6 +129,15 @@ export default function SummaryPage() {
     loadSummaryData();
   }, [loadSummaryData]);
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadSummaryData(true);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleMonthYearChange = (year: number, month: number) => {
     setSelectedYear(year);
     setSelectedMonth(month);
@@ -168,11 +178,11 @@ export default function SummaryPage() {
               </p>
             </div>
             <button
-              onClick={() => loadSummaryData()}
+              onClick={handleRefresh}
               className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
               aria-label="Refresh summary data"
             >
-              <span className="material-symbols-outlined text-lg">refresh</span>
+              <span className={`material-symbols-outlined text-lg ${isRefreshing ? "animate-spin" : ""}`}>refresh</span>
             </button>
           </div>
 

@@ -179,13 +179,18 @@ export function invalidateMealsMonthCache(month: string, userId: number | string
 export async function fetchMeals(
   userId: number,
   date?: string,
-  month?: string
+  month?: string,
+  forceRefresh = false
 ): Promise<ApiMealsResponse> {
   // Derive the month string we need
   const targetMonth = month ?? (date ? date.slice(0, 7) : getTodayDateStr().slice(0, 7));
 
+  if (forceRefresh) {
+    invalidateMealsMonthCache(targetMonth, userId);
+  }
+
   // Try the daily cache first
-  const cached = getMealsMonthCache(targetMonth, userId);
+  const cached = forceRefresh ? null : getMealsMonthCache(targetMonth, userId);
   if (cached) {
     const filtered = date ? cached.filter((m) => (m.log_date ?? m.meal_date ?? '').startsWith(date)) : cached;
     console.log('[fetchMeals] served from cache', { targetMonth, date, count: filtered.length });
@@ -281,11 +286,15 @@ function invalidateWaterCache(date: string, userId: number | string): void {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function fetchNutritionGoal(date: string): Promise<NutritionGoal | null> {
+export async function fetchNutritionGoal(date: string, forceRefresh = false): Promise<NutritionGoal | null> {
   const userId = getUserIdFromToken() ?? 'anon';
+
+  if (forceRefresh) {
+    invalidateGoalCache(date, userId);
+  }
   
   // Try cache first
-  const cached = getGoalCache(date, userId);
+  const cached = forceRefresh ? null : getGoalCache(date, userId);
   if (cached) {
     console.log('[fetchNutritionGoal] served from cache', { date });
     return cached;
@@ -369,11 +378,15 @@ export async function saveUserMetric(metrics: Partial<MetricData>): Promise<void
   });
 }
 
-export async function fetchWaterDaily(date: string): Promise<{ logs: any[]; total_ml: number }> {
+export async function fetchWaterDaily(date: string, forceRefresh = false): Promise<{ logs: any[]; total_ml: number }> {
     const userId = getUserIdFromToken() ?? 'anon';
 
+  if (forceRefresh) {
+    invalidateWaterCache(date, userId);
+  }
+
     // Try cache first
-    const cached = getWaterCache(date, userId);
+  const cached = forceRefresh ? null : getWaterCache(date, userId);
     if (cached) {
         console.log('[fetchWaterDaily] served from cache', { date });
         return cached;

@@ -139,12 +139,17 @@ export function invalidateWorkoutsMonthCache(month: string, userId: number | str
 export async function fetchWorkoutSessions(
   userId: number,
   month?: string,
-  date?: string
+  date?: string,
+  forceRefresh = false
 ): Promise<ApiWorkoutSessionsResponse> {
   const targetMonth = month ?? getTodayDateStr().slice(0, 7);
 
+  if (forceRefresh) {
+    invalidateWorkoutsMonthCache(targetMonth, userId);
+  }
+
   // Try the daily cache first
-  const cached = getWorkoutsMonthCache(targetMonth, userId);
+  const cached = forceRefresh ? null : getWorkoutsMonthCache(targetMonth, userId);
   if (cached) {
     console.log('[fetchWorkoutSessions] served from cache', { targetMonth, count: cached.length });
     return cached as ApiWorkoutSessionsResponse;
@@ -497,10 +502,14 @@ export function invalidateSummaryCache(month: string, userId: number | string): 
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function fetchSummary(month: string): Promise<SummaryPayload> {
+export async function fetchSummary(month: string, forceRefresh = false): Promise<SummaryPayload> {
   const userId = getUserIdFromToken() ?? 'anon';
+
+  if (forceRefresh) {
+    invalidateSummaryCache(month, userId);
+  }
   
-  const cached = getSummaryCache(month, userId);
+  const cached = forceRefresh ? null : getSummaryCache(month, userId);
   if (cached) {
     console.log('[fetchSummary] served from cache', { month });
     return cached;
