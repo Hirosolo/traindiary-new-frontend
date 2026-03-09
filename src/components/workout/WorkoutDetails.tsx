@@ -86,6 +86,7 @@ export default function WorkoutDetails({
   // Use current workout status if available, fallback to basic logic
   const sessionStatus = useMemo(() => {
     if (!workout) return "PENDING";
+    if (workout.status) return workout.status;
     if (workout.isCompleted) return "COMPLETED";
     
     const anySetDone = workout.exercises.some(ex => ex.sets.some(s => s.status === true));
@@ -111,7 +112,7 @@ export default function WorkoutDetails({
 
   const canMarkComplete = allExercisesDone && !hasUnsavedChanges;
 
-  const isReadOnly = workout.isCompleted;
+  const isReadOnly = sessionStatus === "COMPLETED";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -138,7 +139,7 @@ export default function WorkoutDetails({
             </span>
           </div>
           <div className="flex items-center gap-3">
-            {onDeleteSession && (
+            {onDeleteSession && !isReadOnly && (
               <button
                 onClick={() => {
                   setConfirmDialog({

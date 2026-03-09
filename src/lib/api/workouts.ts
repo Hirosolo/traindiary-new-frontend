@@ -314,6 +314,21 @@ export async function completeWorkoutSession(sessionId: string | number) {
   return result;
 }
 
+export async function setWorkoutSessionStatus(
+  sessionId: string | number,
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'UNFINISHED' | 'MISSED'
+) {
+  const result = await apiFetch(`/workouts/${sessionId}`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+
+  const userId = getUserIdFromToken() ?? 'anon';
+  invalidateSummaryCache(getTodayDateStr().slice(0, 7), userId);
+
+  return result;
+}
+
 export async function updateSessionDetailStatus(
   sessionDetailId: string | number,
   status: boolean

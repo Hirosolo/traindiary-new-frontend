@@ -16,7 +16,7 @@ import LogWorkoutModal, { NewWorkoutSession } from "@/components/workout/LogWork
 import AddExerciseModal, { ExerciseToAdd } from "@/components/workout/AddExerciseModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  completeWorkoutSession,
+  setWorkoutSessionStatus,
   createWorkoutSession,
   fetchWorkoutSessionById,
   fetchWorkoutSessions,
@@ -307,6 +307,7 @@ export default function WorkoutPage() {
 
   const handleUpdateSet = (exerciseId: string, setId: string, field: string, value: number | boolean | undefined) => {
     if (!selectedWorkout) return;
+    if (selectedWorkout.status === 'COMPLETED' || selectedWorkout.isCompleted) return;
     const updated = {
       ...selectedWorkout,
       exercises: selectedWorkout.exercises.map(ex => ex.id === exerciseId 
@@ -320,6 +321,7 @@ export default function WorkoutPage() {
 
   const handleAddSet = (exerciseId: string) => {
     if (!selectedWorkout) return;
+    if (selectedWorkout.status === 'COMPLETED' || selectedWorkout.isCompleted) return;
     const updated = {
       ...selectedWorkout,
       exercises: selectedWorkout.exercises.map(ex => {
@@ -339,6 +341,7 @@ export default function WorkoutPage() {
 
   const handleSaveWorkout = async () => {
     if (!selectedWorkout) return;
+    if (selectedWorkout.status === 'COMPLETED' || selectedWorkout.isCompleted) return;
     setIsSavingWorkout(true);
     try {
       // 1. Collect all sets from all exercises to sync in one go
@@ -369,9 +372,14 @@ export default function WorkoutPage() {
       }
 
       // Check if all done
-      const allDone = selectedWorkout.exercises.every(ex => ex.sets.every(s => s.status));
-      if (allDone && !selectedWorkout.isCompleted) {
-          await completeWorkoutSession(selectedWorkout.id);
+      const allDone =
+        selectedWorkout.exercises.length > 0 &&
+        selectedWorkout.exercises.every(ex => ex.sets.length > 0 && ex.sets.every(s => s.status));
+
+      if (allDone) {
+        await setWorkoutSessionStatus(selectedWorkout.id, 'COMPLETED');
+      } else {
+        await setWorkoutSessionStatus(selectedWorkout.id, 'PENDING');
       }
 
       await refreshSessions();
@@ -393,6 +401,7 @@ export default function WorkoutPage() {
   };
 
   const handleAddExercise = () => {
+      if (selectedWorkout?.status === 'COMPLETED' || selectedWorkout?.isCompleted) return;
       setIsAddExerciseModalOpen(true);
   };
 
@@ -623,6 +632,7 @@ export default function WorkoutPage() {
                     onAddExercise={handleAddExercise}
                     onDeleteExercise={async (id) => {
                         if (!selectedWorkout) return;
+                      if (selectedWorkout.status === 'COMPLETED' || selectedWorkout.isCompleted) return;
                         
                         try {
                           // Find the exercise to get its session_detail_id
@@ -649,10 +659,12 @@ export default function WorkoutPage() {
                         }
                     }}
                     onDeleteSet={(exId, sId) => {
+                      if (selectedWorkout?.status === 'COMPLETED' || selectedWorkout?.isCompleted) return;
                         setSelectedWorkout(prev => prev ? { ...prev, exercises: prev.exercises.map(e => e.id === exId ? { ...e, sets: e.sets.filter(s => s.id !== sId) } : e) } : null);
                         setHasUnsavedChanges(true);
                     }}
                     onDeleteSession={async (id) => {
+                      if (selectedWorkout?.status === 'COMPLETED' || selectedWorkout?.isCompleted) return;
                         await deleteWorkoutSession(id);
                         
                         // Update monthly cache in-place
