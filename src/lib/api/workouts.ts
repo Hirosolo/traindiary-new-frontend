@@ -485,7 +485,13 @@ function getTodayVersion(): string {
 
 export async function fetchExercises(): Promise<ApiExercise[]> {
   if (typeof window === 'undefined') {
-    return apiFetch<{ data: ApiExercise[] }>(`/exercises`).then(res => res.data);
+    const raw = await apiFetch<unknown>(`/exercises`);
+    if (Array.isArray(raw)) return raw as ApiExercise[];
+    if (raw && typeof raw === 'object') {
+      const nested = (raw as Record<string, unknown>).data;
+      if (Array.isArray(nested)) return nested as ApiExercise[];
+    }
+    return [];
   }
 
   const storedVersion = localStorage.getItem(EXERCISES_VERSION_KEY);
@@ -526,7 +532,24 @@ export async function fetchExercises(): Promise<ApiExercise[]> {
     localStorage.setItem(EXERCISES_DATA_KEY, JSON.stringify(updatedExercises));
     return updatedExercises;
   } else {
-    // Data unchanged: just update the version stamp and return local cache
+    // Data unchanged: if local cache is empty, perform full fetch to avoid blank state.
+    if (localExercises.length === 0) {
+      const full = await apiFetch<unknown>(`/exercises`);
+      let resolved: ApiExercise[] = [];
+
+      if (Array.isArray(full)) {
+        resolved = full as ApiExercise[];
+      } else if (full && typeof full === 'object') {
+        const nested = (full as Record<string, unknown>).data;
+        if (Array.isArray(nested)) resolved = nested as ApiExercise[];
+      }
+
+      resolved.sort((a, b) => a.name.localeCompare(b.name));
+      localStorage.setItem(EXERCISES_VERSION_KEY, result.version);
+      localStorage.setItem(EXERCISES_DATA_KEY, JSON.stringify(resolved));
+      return resolved;
+    }
+
     localStorage.setItem(EXERCISES_VERSION_KEY, result.version);
     return localExercises;
   }

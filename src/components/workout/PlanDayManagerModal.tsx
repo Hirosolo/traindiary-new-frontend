@@ -5,6 +5,7 @@ import {
   createWorkoutDayPlan,
   deleteWorkoutDayPlan,
   fetchExercises,
+  fetchWorkoutTypes,
   fetchWorkoutDayPlans,
   updateWorkoutDayPlan,
   type ApiExercise,
@@ -31,6 +32,7 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
   const [exercises, setExercises] = useState<ApiExercise[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [workoutTypes, setWorkoutTypes] = useState<string[]>([]);
 
   const [mode, setMode] = useState<PlanManagerMode>("list");
   const [selectedPlan, setSelectedPlan] = useState<ApiWorkoutDayPlan | null>(null);
@@ -48,9 +50,14 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
     const load = async () => {
       setIsLoading(true);
       try {
-        const [planData, exerciseData] = await Promise.all([fetchWorkoutDayPlans(), fetchExercises()]);
+        const [planData, exerciseData, typeData] = await Promise.all([
+          fetchWorkoutDayPlans(),
+          fetchExercises(),
+          fetchWorkoutTypes(),
+        ]);
         setPlans(planData);
         setExercises(exerciseData);
+        setWorkoutTypes(typeData);
       } catch (error) {
         console.error("Failed to load day plan manager data", error);
       } finally {
@@ -275,13 +282,25 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
               </div>
 
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Plan name" className="w-full bg-surface-card border border-white/10 rounded-xl px-3 py-2" />
-              <input value={type} onChange={(e) => setType(e.target.value)} placeholder="Workout type (optional)" className="w-full bg-surface-card border border-white/10 rounded-xl px-3 py-2" />
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full bg-surface-card border border-white/10 rounded-xl px-3 py-2"
+              >
+                <option value="">Select workout type</option>
+                {workoutTypes.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={2} className="w-full bg-surface-card border border-white/10 rounded-xl px-3 py-2" />
 
               <div className="space-y-2">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-text-dim">Search & Add Exercises</h4>
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search exercise..." className="w-full bg-surface-card border border-white/10 rounded-xl px-3 py-2" />
                 <div className="max-h-36 overflow-y-auto border border-white/10 rounded-xl p-2 space-y-1">
+                  {filteredExercises.length === 0 && (
+                    <p className="text-xs text-text-dim px-2 py-2">No exercises found.</p>
+                  )}
                   {filteredExercises.slice(0, 40).map((exercise) => (
                     <button
                       key={exercise.exercise_id}
