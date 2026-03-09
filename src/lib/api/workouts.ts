@@ -295,6 +295,42 @@ export async function createWorkoutDayPlan(payload: {
   });
 }
 
+export async function updateWorkoutDayPlan(
+  planId: number | string,
+  payload: {
+    name: string;
+    type?: string | null;
+    notes?: string | null;
+    exercises: Array<{
+      exercise_id: string | number;
+      planned_sets: number;
+      planned_reps: number;
+      sort_order?: number;
+    }>;
+  }
+): Promise<ApiWorkoutDayPlan> {
+  return apiFetch<ApiWorkoutDayPlan>(`/workout-day-plans/${planId}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      name: payload.name,
+      type: payload.type,
+      notes: payload.notes,
+      exercises: payload.exercises.map((item, index) => ({
+        exercise_id: Number(item.exercise_id),
+        planned_sets: Number(item.planned_sets),
+        planned_reps: Number(item.planned_reps),
+        sort_order: item.sort_order ?? index,
+      })),
+    }),
+  });
+}
+
+export async function deleteWorkoutDayPlan(planId: number | string): Promise<{ plan_id: number }> {
+  return apiFetch<{ plan_id: number }>(`/workout-day-plans/${planId}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function updateExerciseLog(payload: {
   logId: string | number;
   actualReps?: number;

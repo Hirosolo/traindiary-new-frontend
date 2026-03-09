@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  createWorkoutDayPlan,
-  fetchExercises,
-  fetchWorkoutDayPlans,
-  fetchWorkoutTypes,
-  type ApiWorkoutDayPlan,
-} from "@/lib/api/workouts";
+import { fetchExercises, fetchWorkoutTypes } from "@/lib/api/workouts";
 
 export interface NewWorkoutSession {
   title: string;
@@ -91,7 +85,6 @@ export default function LogWorkoutModal({
   onClose,
   onSubmit,
 }: LogWorkoutModalProps) {
-  const [mode, setMode] = useState<"session" | "plan">("session");
   const isCardioExercise = (exercise: Exercise) => (exercise.type || "").toLowerCase() === "cardio";
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -104,10 +97,6 @@ export default function LogWorkoutModal({
   const [workoutTypes, setWorkoutTypes] = useState<string[]>([]);
   const [isLoadingExercises, setIsLoadingExercises] = useState(false);
   const [isLoadingTypes, setIsLoadingTypes] = useState(false);
-  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
-  const [savedPlans, setSavedPlans] = useState<ApiWorkoutDayPlan[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
-  const [planName, setPlanName] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -150,44 +139,9 @@ export default function LogWorkoutModal({
       }
     };
 
-    const loadDayPlans = async () => {
-      setIsLoadingPlans(true);
-      try {
-        const plans = await fetchWorkoutDayPlans();
-        setSavedPlans(plans);
-      } catch (error) {
-        console.error("Failed to fetch workout day plans", error);
-        setSavedPlans([]);
-      } finally {
-        setIsLoadingPlans(false);
-      }
-    };
-
     loadExercises();
     loadWorkoutTypes();
-    loadDayPlans();
   }, [isOpen]);
-
-  const applyPlan = (planId: string) => {
-    setSelectedPlanId(planId);
-    if (!planId) return;
-
-    const plan = savedPlans.find((item) => String(item.plan_id) === planId);
-    if (!plan) return;
-
-    if (plan.type) setWorkoutType(plan.type);
-    if (plan.notes) setNote(plan.notes);
-
-    const mapped: SelectedExercise[] = plan.exercises.map((item) => ({
-      id: item.exercise_id,
-      name: item.exercise?.name || `Exercise ${item.exercise_id}`,
-      category: item.exercise?.category,
-      type: item.exercise?.type,
-      reps: Array.from({ length: Math.max(1, item.planned_sets) }, () => Math.max(0, item.planned_reps)),
-    }));
-
-    setSelectedExercises(mapped);
-  };
 
   const filteredExercises = useMemo(() => {
     return availableExercises.filter((ex) => {
@@ -287,58 +241,36 @@ export default function LogWorkoutModal({
     setIsSubmitting(true);
 
     try {
-      if (mode === "plan") {
-        if (!planName.trim()) {
-          alert("Please provide a name for this day plan");
-          return;
-        }
-
-        await createWorkoutDayPlan({
-          name: planName.trim(),
-          type: workoutType || undefined,
-          notes: note || undefined,
-          exercises: selectedExercises.map((ex, index) => ({
-            exercise_id: ex.id,
-            planned_sets: ex.reps.length,
-            planned_reps: ex.reps[0] ?? 10,
-            sort_order: index,
-          })),
-        });
-      } else {
-        await onSubmit({
-          title: workoutType || "Workout",
-          date,
-          time: new Date().toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }),
-          type: workoutType || "Workout",
-          note: note || undefined,
-          exercises: selectedExercises.map((ex) => {
-            const isCardio = isCardioExercise(ex);
-            return {
-              id: ex.id,
-              name: ex.name,
-              type: ex.type,
-              reps: ex.reps.map((rep) =>
-                isCardio ? { duration: rep, weight_kg: null } : { rep, weight_kg: null }
-              ),
-            };
-          }),
-        });
-      }
+      await onSubmit({
+        title: workoutType || "Workout",
+        date,
+        time: new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        type: workoutType || "Workout",
+        note: note || undefined,
+        exercises: selectedExercises.map((ex) => {
+          const isCardio = isCardioExercise(ex);
+          return {
+            id: ex.id,
+            name: ex.name,
+            type: ex.type,
+            reps: ex.reps.map((rep) =>
+              isCardio ? { duration: rep, weight_kg: null } : { rep, weight_kg: null }
+            ),
+          };
+        }),
+      });
 
       setStep(1);
-      setMode("session");
       setDate(new Date().toISOString().split("T")[0]);
       setWorkoutType("");
       setSelectedExercises([]);
       setSearchQuery("");
       setCategoryFilter("All");
       setNote("");
-      setSelectedPlanId("");
-      setPlanName("");
     } catch (error) {
       console.error("Failed to submit workout flow", error);
       alert(error instanceof Error ? error.message : "Unable to submit workout flow");
@@ -361,7 +293,7 @@ export default function LogWorkoutModal({
           <div className="flex items-center justify-between mb-4 lg:mb-6">
             <div>
               <h2 className="text-xl lg:text-2xl font-display font-bold uppercase tracking-tight">
-                {mode === "session" ? "New Session" : "Plan Workout Day"}
+                New Session
               </h2>
               <p className="text-text-dim text-[10px] mt-1 uppercase tracking-widest font-semibold">
                 Step {step < 10 ? `0${step}` : step}: {step === 1 ? "Schedule & Type" : step === 2 ? "Select Exercises" : "Finalize Plan"}
@@ -387,59 +319,6 @@ export default function LogWorkoutModal({
           {/* Step 1: Date & Type */}
           {step === 1 && (
             <div className="space-y-8">
-              <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl border border-white/10 bg-surface-card">
-                <button
-                  type="button"
-                  onClick={() => setMode("session")}
-                  className={`rounded-xl py-2 text-[10px] font-bold uppercase tracking-wider ${mode === "session" ? "bg-primary text-white" : "text-text-dim"}`}
-                >
-                  Create Session
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("plan")}
-                  className={`rounded-xl py-2 text-[10px] font-bold uppercase tracking-wider ${mode === "plan" ? "bg-primary text-white" : "text-text-dim"}`}
-                >
-                  Save Day Plan
-                </button>
-              </div>
-
-              {mode === "session" && (
-                <div>
-                  <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-[0.2em] mb-4">
-                    Use Saved Day Plan
-                  </h3>
-                  <select
-                    value={selectedPlanId}
-                    onChange={(e) => applyPlan(e.target.value)}
-                    className="w-full bg-surface-card border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="">Start from scratch</option>
-                    {savedPlans.map((plan) => (
-                      <option key={plan.plan_id} value={String(plan.plan_id)}>
-                        {plan.name}
-                      </option>
-                    ))}
-                  </select>
-                  {isLoadingPlans && <p className="text-xs text-text-dim mt-2">Loading saved plans...</p>}
-                </div>
-              )}
-
-              {mode === "plan" && (
-                <div>
-                  <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-[0.2em] mb-4">
-                    Day Plan Name
-                  </h3>
-                  <input
-                    type="text"
-                    value={planName}
-                    onChange={(e) => setPlanName(e.target.value)}
-                    placeholder="e.g. Push Day A"
-                    className="w-full bg-surface-card border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              )}
-
               <div>
                 <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-[0.2em] mb-4">
                   Select Date
@@ -448,7 +327,6 @@ export default function LogWorkoutModal({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  disabled={mode === "plan"}
                   className="w-full bg-surface-card border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -791,11 +669,7 @@ export default function LogWorkoutModal({
             >
               {step === 3 ? (
                 <span className="hidden sm:inline">
-                  {isSubmitting
-                    ? "Saving..."
-                    : mode === "session"
-                      ? "Confirm & Create Session"
-                      : "Confirm & Save Day Plan"}
+                  {isSubmitting ? "Saving..." : "Confirm & Create Session"}
                 </span>
               ) : (
                 <>
@@ -804,7 +678,7 @@ export default function LogWorkoutModal({
               )}
               {step === 3 && (
                 <span className="sm:hidden">
-                  {isSubmitting ? "Working..." : mode === "session" ? "Create Session" : "Save Plan"}
+                  {isSubmitting ? "Working..." : "Create Session"}
                 </span>
               )}
             </button>

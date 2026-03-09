@@ -14,6 +14,7 @@ import WorkoutDetails, {
 } from "@/components/workout/WorkoutDetails";
 import LogWorkoutModal, { NewWorkoutSession } from "@/components/workout/LogWorkoutModal";
 import AddExerciseModal, { ExerciseToAdd } from "@/components/workout/AddExerciseModal";
+import PlanDayManagerModal from "@/components/workout/PlanDayManagerModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   setWorkoutSessionStatus,
@@ -59,6 +60,7 @@ export default function WorkoutPage() {
   
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutDetailsData | null>(null);
   const [isLogWorkoutModalOpen, setIsLogWorkoutModalOpen] = useState(false);
+  const [isPlanDayManagerOpen, setIsPlanDayManagerOpen] = useState(false);
   const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
   
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
@@ -483,9 +485,8 @@ export default function WorkoutPage() {
           grScore={grScore}
           grScoreChange={grScoreChange}
           muscleSplit={muscleSplit}
-          onLogWorkout={() => {
-            setErrorMessage(null);
-            setIsLogWorkoutModalOpen(true);
+          onManagePlanDays={() => {
+            setIsPlanDayManagerOpen(true);
           }}
         />
 
@@ -494,13 +495,6 @@ export default function WorkoutPage() {
           <div className="lg:hidden p-4 border-b border-white/5 bg-surface-dark/50 backdrop-blur-md sticky top-0 z-20">
              <div className="flex justify-between items-center mb-4">
                <h1 className="text-2xl font-display font-bold uppercase italic tracking-tighter">Workout</h1>
-               <button
-                 onClick={handleRefresh}
-                 className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
-                 aria-label="Refresh workout data"
-               >
-                 <span className={`material-symbols-outlined text-base ${isRefreshing ? "animate-spin" : ""}`}>refresh</span>
-               </button>
              </div>
              <div className="flex items-center justify-between gap-4 overflow-x-auto no-scrollbar pb-2">
                 {weekDays.map((d, i) => {
@@ -524,15 +518,6 @@ export default function WorkoutPage() {
           <div className="flex-1 overflow-y-auto no-scrollbar">
             {/* Main Calendar View Toggle or Hybrid */}
             <div className="p-4 lg:p-8 max-w-5xl mx-auto w-full">
-                <div className="hidden lg:flex justify-end mb-4">
-                  <button
-                    onClick={handleRefresh}
-                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
-                  >
-                    <span className={`material-symbols-outlined text-sm ${isRefreshing ? "animate-spin" : ""}`}>refresh</span>
-                    Refresh Data
-                  </button>
-                </div>
                 {/* Dashboard Stats (Tablet/Mobile Only) */}
                 <div className="lg:hidden grid grid-cols-2 gap-4 mb-8">
                    <div className="bg-surface-card p-5 rounded-3xl border border-white/5">
@@ -602,6 +587,8 @@ export default function WorkoutPage() {
                     days={calendarDays}
                     onPrevMonth={() => handleMonthYearChange(selectedYear, selectedMonth === 0 ? 11 : selectedMonth - 1)}
                     onNextMonth={() => handleMonthYearChange(selectedYear, selectedMonth === 11 ? 0 : selectedMonth + 1)}
+                    onRefresh={handleRefresh}
+                    isRefreshing={isRefreshing}
                     onSessionClick={handleSessionClick}
                     onDateSelect={(d) => setSelectedDate(d)}
                     onMonthYearChange={handleMonthYearChange}
@@ -611,10 +598,11 @@ export default function WorkoutPage() {
         </div>
 
         {/* LOG BUTTON (MOBILE ONLY) */}
-        <div className="lg:hidden fixed bottom-24 right-6 z-40">
+          <div className="fixed bottom-24 right-6 z-40">
            <button 
              onClick={() => { setErrorMessage(null); setIsLogWorkoutModalOpen(true); }}
              className="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all active:scale-95"
+             aria-label="Create new session"
            >
               <span className="material-symbols-outlined text-3xl">add</span>
            </button>
@@ -687,6 +675,11 @@ export default function WorkoutPage() {
         isOpen={isLogWorkoutModalOpen}
         onClose={() => setIsLogWorkoutModalOpen(false)}
         onSubmit={handleLogWorkoutSubmit}
+      />
+
+      <PlanDayManagerModal
+        isOpen={isPlanDayManagerOpen}
+        onClose={() => setIsPlanDayManagerOpen(false)}
       />
       
       <AddExerciseModal

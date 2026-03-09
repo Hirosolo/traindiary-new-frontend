@@ -9,7 +9,7 @@ interface ActivityOverviewProps {
   grScore: number;
   grScoreChange?: number;
   muscleSplit: Array<{ name: string; value: number; color: string }>;
-  onLogWorkout: () => void;
+  onManagePlanDays: () => void;
 }
 
 export default function ActivityOverview({
@@ -17,7 +17,7 @@ export default function ActivityOverview({
   grScore,
   grScoreChange = 0,
   muscleSplit,
-  onLogWorkout,
+  onManagePlanDays,
 }: ActivityOverviewProps) {
   return (
     <aside className="w-80 border-r border-white/5 bg-surface-dark p-6 flex flex-col gap-8 shrink-0 overflow-y-auto hidden lg:flex">
@@ -117,11 +117,11 @@ export default function ActivityOverview({
 
       <div className="mt-auto pt-6 border-t border-white/5">
         <button
-          onClick={onLogWorkout}
+          onClick={onManagePlanDays}
           className="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all duration-300 transform active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
         >
-          <span className="material-symbols-outlined text-xl">add_circle</span>
-          <span className="text-xs uppercase tracking-[0.1em]">CREATE SESSION</span>
+          <span className="material-symbols-outlined text-xl">calendar_month</span>
+          <span className="text-xs uppercase tracking-[0.1em]">MANAGE PLAN DAYS</span>
         </button>
       </div>
     </aside>

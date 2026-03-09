@@ -27,6 +27,8 @@ interface WorkoutCalendarProps {
   days: DayData[];
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
   onSessionClick: (session: WorkoutSession, day: number) => void;
   onDateSelect?: (date: Date) => void;
   onMonthYearChange?: (year: number, month: number) => void;
@@ -39,6 +41,8 @@ export default function WorkoutCalendar({
   days,
   onPrevMonth,
   onNextMonth,
+  onRefresh,
+  isRefreshing = false,
   onSessionClick,
   onDateSelect,
   onMonthYearChange,
@@ -166,6 +170,13 @@ export default function WorkoutCalendar({
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card border border-white/5 hover:border-white/20 transition-colors"
             >
               <span className="material-symbols-outlined text-xl">chevron_right</span>
+            </button>
+            <button
+              onClick={onRefresh}
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card border border-white/5 hover:border-white/20 transition-colors"
+              aria-label="Refresh sessions"
+            >
+              <span className={`material-symbols-outlined text-xl ${isRefreshing ? "animate-spin" : ""}`}>refresh</span>
             </button>
           </div>
         </div>
