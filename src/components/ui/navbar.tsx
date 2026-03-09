@@ -24,11 +24,11 @@ interface AnimatedFixedNavbarProps {
 export default function NavBar({
   brand = "TrainDiary",
   items = [
-    { name: "Home", link: "/", icon: "dashboard" },
-    { name: "Workout", link: "workout", icon: "sprint" },
-    { name: "Nutrition", link: "nutrition", icon: "lunch_dining" },
-    { name: "Summary", link: "summary", icon: "query_stats" },
-    { name: "Programs", link: "programs", icon: "auto_stories" },
+    { name: "Home", link: "/", icon: "home" },
+    { name: "Workout", link: "workout", icon: "fitness_center" },
+    { name: "Nutrition", link: "nutrition", icon: "restaurant" },
+    { name: "Summary", link: "summary", icon: "analytics" },
+    { name: "Programs", link: "programs", icon: "school" },
   ],
   className,
 }: AnimatedFixedNavbarProps) {
@@ -94,7 +94,7 @@ export default function NavBar({
         </div>
         <div className="flex items-center gap-4 md:gap-6">
           <button className="material-symbols-outlined text-white/70 hover:text-white transition-colors">
-            travel_explore
+            search
           </button>
           {user && (
             <div className="flex items-center gap-4">
@@ -103,7 +103,7 @@ export default function NavBar({
                 className="group relative flex justify-center p-2 rounded-md bg-white/5 border border-white/10 text-white font-semibold transition-colors hover:bg-white/10"
               >
                 <span className="material-symbols-outlined w-5 h-5 flex items-center justify-center text-[20px] group-hover:text-blue-500 transition-colors">
-                  tune
+                  monitoring
                 </span>
                 <span className="absolute top-full mt-2 opacity-0 group-hover:opacity-100 text-blue-500 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-opacity pointer-events-none">
                   Update Specs
@@ -120,14 +120,14 @@ export default function NavBar({
             </Link>
           ) : (
             <Link href="/profile" aria-label="Open profile" className="hidden sm:flex items-center justify-center h-9 w-9 rounded-full bg-white/10 ring-1 ring-white/10 hover:ring-primary/50 transition-all overflow-hidden">
-              <span className="material-symbols-outlined text-white text-[18px]">face</span>
+              <span className="material-symbols-outlined text-white text-[18px]">account_circle</span>
             </Link>
           )}
           <button
             className="lg:hidden flex items-center cursor-pointer"
             onClick={() => setIsMobileMenuOpen(true)}
           >
-            <span className="material-symbols-outlined text-white">widgets</span>
+            <span className="material-symbols-outlined text-white">menu</span>
           </button>
         </div>
       </div>
@@ -148,7 +148,7 @@ export default function NavBar({
               className="cursor-pointer"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              <span className="material-symbols-outlined text-3xl">cancel</span>
+              <span className="material-symbols-outlined text-3xl">close</span>
             </button>
           </div>
           <div className="flex flex-col gap-8">
@@ -184,7 +184,7 @@ export default function NavBar({
                   }}
                   className="flex items-center gap-4 text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-primary text-left"
                 >
-                  <span className="material-symbols-outlined text-4xl">flag</span>
+                  <span className="material-symbols-outlined text-4xl">bolt</span>
                   Set Goal
                 </button>
                 <button
@@ -194,7 +194,7 @@ export default function NavBar({
                   }}
                   className="flex items-center gap-4 text-3xl font-bold font-display uppercase tracking-tight border-b border-white/5 pb-4 text-blue-500 text-left"
                 >
-                  <span className="material-symbols-outlined text-4xl">tune</span>
+                  <span className="material-symbols-outlined text-4xl">monitoring</span>
                   Update Specs
                 </button>
               </>
