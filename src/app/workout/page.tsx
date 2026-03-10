@@ -668,62 +668,71 @@ export default function WorkoutPage() {
         {/* DETAILS PANEL */}
         <AnimatePresence>
             {selectedWorkout && (
-                <WorkoutDetails
-                    workout={selectedWorkout}
-                    onClose={() => setSelectedWorkout(null)}
-                    onFinishWorkout={handleSaveWorkout}
-                    onUpdateSet={handleUpdateSet}
-                    onAddSet={handleAddSet}
-                    onAddExercise={handleAddExercise}
-                    onDeleteExercise={async (id) => {
-                        if (!selectedWorkout) return;
-                      if (selectedWorkout.status === 'COMPLETED' || selectedWorkout.isCompleted) return;
-                        
-                        try {
-                          // Find the exercise to get its session_detail_id
-                          const exercise = selectedWorkout.exercises.find(e => e.id === id);
-                          if (exercise?.id) {
-                            // Call API to delete from database
-                            await deleteSessionDetail(selectedWorkout.id, exercise.id);
-                                
-                            // Update local state
-                            setSelectedWorkout(prev => prev ? { ...prev, exercises: prev.exercises.filter(e => e.id !== id) } : null);
+                <>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
+                    onClick={() => setSelectedWorkout(null)}
+                  />
+                  <WorkoutDetails
+                      workout={selectedWorkout}
+                      onClose={() => setSelectedWorkout(null)}
+                      onFinishWorkout={handleSaveWorkout}
+                      onUpdateSet={handleUpdateSet}
+                      onAddSet={handleAddSet}
+                      onAddExercise={handleAddExercise}
+                      onDeleteExercise={async (id) => {
+                          if (!selectedWorkout) return;
+                        if (selectedWorkout.status === 'COMPLETED' || selectedWorkout.isCompleted) return;
+                          
+                          try {
+                            // Find the exercise to get its session_detail_id
+                            const exercise = selectedWorkout.exercises.find(e => e.id === id);
+                            if (exercise?.id) {
+                              // Call API to delete from database
+                              await deleteSessionDetail(selectedWorkout.id, exercise.id);
+                                  
+                              // Update local state
+                              setSelectedWorkout(prev => prev ? { ...prev, exercises: prev.exercises.filter(e => e.id !== id) } : null);
 
-                            // Update monthly cache
-                            const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
-                            updateWorkoutsMonthCache(monthParam, userId, (prev) => 
-                              prev.map(s => String(s.session_id) === selectedWorkout.id 
-                                ? { ...s, session_details: s.session_details?.filter(d => String(d.session_detail_id) !== id) } 
-                                : s
-                              )
-                            );
+                              // Update monthly cache
+                              const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+                              updateWorkoutsMonthCache(monthParam, userId, (prev) => 
+                                prev.map(s => String(s.session_id) === selectedWorkout.id 
+                                  ? { ...s, session_details: s.session_details?.filter(d => String(d.session_detail_id) !== id) } 
+                                  : s
+                                )
+                              );
+                            }
+                          } catch (error) {
+                            console.error('Failed to delete exercise:', error);
+                            alert('Failed to delete exercise. Please try again.');
                           }
-                        } catch (error) {
-                          console.error('Failed to delete exercise:', error);
-                          alert('Failed to delete exercise. Please try again.');
-                        }
-                    }}
-                    onDeleteSet={(exId, sId) => {
-                      if (selectedWorkout?.status === 'COMPLETED' || selectedWorkout?.isCompleted) return;
-                        setSelectedWorkout(prev => prev ? { ...prev, exercises: prev.exercises.map(e => e.id === exId ? { ...e, sets: e.sets.filter(s => s.id !== sId) } : e) } : null);
-                        setHasUnsavedChanges(true);
-                    }}
-                    onDeleteSession={async (id) => {
-                      if (selectedWorkout?.status === 'COMPLETED' || selectedWorkout?.isCompleted) return;
-                        await deleteWorkoutSession(id);
-                        
-                        // Update monthly cache in-place
-                        const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
-                        updateWorkoutsMonthCache(monthParam, userId, (prev) => 
-                            prev.filter(s => String(s.session_id) !== id)
-                        );
+                      }}
+                      onDeleteSet={(exId, sId) => {
+                        if (selectedWorkout?.status === 'COMPLETED' || selectedWorkout?.isCompleted) return;
+                          setSelectedWorkout(prev => prev ? { ...prev, exercises: prev.exercises.map(e => e.id === exId ? { ...e, sets: e.sets.filter(s => s.id !== sId) } : e) } : null);
+                          setHasUnsavedChanges(true);
+                      }}
+                      onDeleteSession={async (id) => {
+                        if (selectedWorkout?.status === 'COMPLETED' || selectedWorkout?.isCompleted) return;
+                          await deleteWorkoutSession(id);
+                          
+                          // Update monthly cache in-place
+                          const monthParam = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+                          updateWorkoutsMonthCache(monthParam, userId, (prev) => 
+                              prev.filter(s => String(s.session_id) !== id)
+                          );
 
-                        setSelectedWorkout(null);
-                        refreshSessions();
-                    }}
-                    hasUnsavedChanges={hasUnsavedChanges}
-                    isLoading={isSavingWorkout || isDetailsLoading}
-                />
+                          setSelectedWorkout(null);
+                          refreshSessions();
+                      }}
+                      hasUnsavedChanges={hasUnsavedChanges}
+                      isLoading={isSavingWorkout || isDetailsLoading}
+                  />
+                </>
             )}
         </AnimatePresence>
       </main>

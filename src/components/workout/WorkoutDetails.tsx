@@ -129,7 +129,7 @@ export default function WorkoutDetails({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "100%", opacity: 0 }}
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed inset-0 lg:relative lg:inset-auto w-full lg:w-[450px] border-l border-white/5 bg-surface-dark overflow-y-auto z-50 lg:z-30"
+      className="fixed inset-y-0 right-0 w-full sm:w-[520px] border-l border-white/10 bg-surface-dark/95 backdrop-blur-md overflow-y-auto z-[80] shadow-2xl"
     >
       <div className="p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
