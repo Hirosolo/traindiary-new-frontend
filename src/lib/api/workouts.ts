@@ -211,6 +211,7 @@ export async function createWorkoutSession(payload: {
   scheduledDate: string;
   type?: string | null;
   notes?: string | null;
+  planId?: number | null;
   exercises?: Array<{
     exercise_id: string | number;
     actual_sets: number;
@@ -225,6 +226,7 @@ export async function createWorkoutSession(payload: {
       scheduled_date: payload.scheduledDate,
       type: payload.type,
       notes: payload.notes,
+      plan_id: payload.planId,
       exercises: payload.exercises?.map(ex => ({
         exercise_id: Number(ex.exercise_id),
         actual_sets: Number(ex.actual_sets),

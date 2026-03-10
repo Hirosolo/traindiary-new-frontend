@@ -429,7 +429,14 @@ export default function WorkoutPage() {
             weight_kg: isCardio ? 0 : (r.weight_kg ?? 0),
           }));
         });
-        const created = await createWorkoutSession({ userId, scheduledDate: data.date, type: data.type, notes: data.note, exercises: exercisesPayload });
+        const created = await createWorkoutSession({
+          userId,
+          scheduledDate: data.date,
+          type: data.type,
+          notes: data.note,
+          planId: data.planId,
+          exercises: exercisesPayload,
+        });
         
         // Update monthly cache in-place
         const monthParam = data.date.slice(0, 7);

@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { fetchExercises, fetchWorkoutTypes } from "@/lib/api/workouts";
+import {
+  ApiWorkoutDayPlan,
+  fetchExercises,
+  fetchWorkoutDayPlans,
+  fetchWorkoutTypes,
+} from "@/lib/api/workouts";
 
 export interface NewWorkoutSession {
   title: string;
   date: string;
   time: string;
   type: string;
+  planId?: number;
   note?: string;
   exercises: {
     id: string | number;
@@ -99,6 +105,8 @@ export default function LogWorkoutModal({
   const [isLoadingTypes, setIsLoadingTypes] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [plans, setPlans] = useState<ApiWorkoutDayPlan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -139,9 +147,49 @@ export default function LogWorkoutModal({
       }
     };
 
+    const loadPlans = async () => {
+      try {
+        const data = await fetchWorkoutDayPlans();
+        setPlans(data);
+      } catch (error) {
+        console.warn("Failed to fetch workout day plans", error);
+        setPlans([]);
+      }
+    };
+
     loadExercises();
     loadWorkoutTypes();
+    loadPlans();
   }, [isOpen]);
+
+  const applyPlanToSelection = (planId: number | null) => {
+    setSelectedPlanId(planId);
+    if (!planId) {
+      return;
+    }
+
+    const selectedPlan = plans.find((item) => item.plan_id === planId);
+    if (!selectedPlan) return;
+
+    if (selectedPlan.type) {
+      setWorkoutType(selectedPlan.type);
+    }
+
+    const mapById = new Map(availableExercises.map((item) => [String(item.id), item]));
+    const nextExercises: SelectedExercise[] = selectedPlan.exercises
+      .map((item) => {
+        const matched = mapById.get(String(item.exercise_id));
+        if (!matched) return null;
+        const setCount = Math.max(Number(item.planned_sets || 1), 1);
+        const reps = Array.from({ length: setCount }, () => Math.max(Number(item.planned_reps || 0), 0));
+        return { ...matched, reps };
+      })
+      .filter(Boolean) as SelectedExercise[];
+
+    if (nextExercises.length > 0) {
+      setSelectedExercises(nextExercises);
+    }
+  };
 
   const filteredExercises = useMemo(() => {
     return availableExercises.filter((ex) => {
@@ -250,6 +298,7 @@ export default function LogWorkoutModal({
           hour12: true,
         }),
         type: workoutType || "Workout",
+        planId: selectedPlanId ?? undefined,
         note: note || undefined,
         exercises: selectedExercises.map((ex) => {
           const isCardio = isCardioExercise(ex);
@@ -271,6 +320,7 @@ export default function LogWorkoutModal({
       setSearchQuery("");
       setCategoryFilter("All");
       setNote("");
+      setSelectedPlanId(null);
     } catch (error) {
       console.error("Failed to submit workout flow", error);
       alert(error instanceof Error ? error.message : "Unable to submit workout flow");
@@ -373,6 +423,24 @@ export default function LogWorkoutModal({
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div>
+                <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-[0.2em] mb-4">
+                  Apply Planned Day (optional)
+                </h3>
+                <select
+                  value={selectedPlanId ?? ""}
+                  onChange={(e) => applyPlanToSelection(e.target.value ? Number(e.target.value) : null)}
+                  className="w-full bg-surface-card border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">No plan</option>
+                  {plans.map((plan) => (
+                    <option key={plan.plan_id} value={plan.plan_id}>
+                      {plan.name}{plan.type ? ` (${plan.type})` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
