@@ -15,7 +15,6 @@ import LogWorkoutModal, { NewWorkoutSession } from "@/components/workout/LogWork
 import AddExerciseModal, { ExerciseToAdd } from "@/components/workout/AddExerciseModal";
 import PlanDayManagerModal from "@/components/workout/PlanDayManagerModal";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/contexts/FeedbackContext";
 import {
   setWorkoutSessionStatus,
   createWorkoutSession,
@@ -31,7 +30,6 @@ import {
   logExerciseSet,
   fetchProgress,
   fetchSummary,
-  getCachedPersonalRecord,
   addPlannedExercises,
   updateWorkoutsMonthCache,
   syncWorkoutLogs,
@@ -52,7 +50,6 @@ type ApiMuscleSplit = {
 
 export default function WorkoutPage() {
   const { user } = useAuth();
-  const toast = useToast();
   const userId = user?.user_id ?? user?.id ?? 1;
   const now = new Date();
   
@@ -178,8 +175,6 @@ export default function WorkoutPage() {
             status: false,
           }));
 
-    const personalRecord = detail.personal_record ?? (detail.exercise_id ? getCachedPersonalRecord(detail.exercise_id) : null);
-
     return {
       id: (detail.session_detail_id ?? detail.exercise_id ?? `exercise-${Date.now()}`).toString(),
       exercise_id: detail.exercise_id,
@@ -188,7 +183,7 @@ export default function WorkoutPage() {
       type: detail.exercises?.type,
       isCardio,
       sets,
-      personalRecord,
+      personalRecord: detail.personal_record,
     };
   }, []);
 
@@ -650,20 +645,14 @@ export default function WorkoutPage() {
         </div>
 
         {/* LOG BUTTON (MOBILE ONLY) */}
-        <div
-          className="fixed right-4 lg:right-6 z-[90]"
-          style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
-        >
-          <button
-            onClick={() => {
-              setErrorMessage(null);
-              setIsLogWorkoutModalOpen(true);
-            }}
-            className="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all active:scale-95"
-            aria-label="Create new session"
-          >
-            <span className="material-symbols-outlined text-3xl">add</span>
-          </button>
+            <div className="fixed bottom-24 right-6 z-40">
+           <button 
+             onClick={() => { setErrorMessage(null); setIsLogWorkoutModalOpen(true); }}
+             className="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all active:scale-95"
+             aria-label="Create new session"
+           >
+              <span className="material-symbols-outlined text-3xl">add</span>
+           </button>
         </div>
 
             <div className="hidden lg:block fixed bottom-44 right-6 z-40">
@@ -719,7 +708,7 @@ export default function WorkoutPage() {
                             }
                           } catch (error) {
                             console.error('Failed to delete exercise:', error);
-                            toast.error('Failed to delete exercise. Please try again.');
+                            alert('Failed to delete exercise. Please try again.');
                           }
                       }}
                       onDeleteSet={(exId, sId) => {

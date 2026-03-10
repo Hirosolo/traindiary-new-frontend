@@ -7,7 +7,6 @@ import {
   fetchWorkoutDayPlans,
   fetchWorkoutTypes,
 } from "@/lib/api/workouts";
-import { useToast } from "@/contexts/FeedbackContext";
 
 export interface NewWorkoutSession {
   title: string;
@@ -92,7 +91,6 @@ export default function LogWorkoutModal({
   onClose,
   onSubmit,
 }: LogWorkoutModalProps) {
-  const toast = useToast();
   const isCardioExercise = (exercise: Exercise) => (exercise.type || "").toLowerCase() === "cardio";
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -264,11 +262,11 @@ export default function LogWorkoutModal({
 
   const handleNext = () => {
     if (step === 1 && !workoutType) {
-      toast.warning("Please select a workout type");
+      alert("Please select a workout type");
       return;
     }
     if (step === 2 && selectedExercises.length === 0) {
-      toast.warning("Please select at least one exercise");
+      alert("Please select at least one exercise");
       return;
     }
     if (step < 3) {
@@ -284,7 +282,7 @@ export default function LogWorkoutModal({
 
   const handleSubmit = async () => {
     if (selectedExercises.length === 0) {
-      toast.warning("Please select at least one exercise");
+      alert("Please select at least one exercise");
       return;
     }
 
@@ -325,7 +323,7 @@ export default function LogWorkoutModal({
       setSelectedPlanId(null);
     } catch (error) {
       console.error("Failed to submit workout flow", error);
-      toast.error(error instanceof Error ? error.message : "Unable to submit workout flow");
+      alert(error instanceof Error ? error.message : "Unable to submit workout flow");
     } finally {
       setIsSubmitting(false);
     }

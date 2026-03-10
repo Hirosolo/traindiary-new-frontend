@@ -3,7 +3,6 @@
 import { useState } from "react";
 import type { FoodItem } from "@/lib/api/nutrition";
 import type { Meal } from "@/components/nutrition/MealCalendar";
-import { useConfirm } from "@/contexts/FeedbackContext";
 
 
 /** Food item with either API totals (total_*) or per-serving values for display */
@@ -40,7 +39,6 @@ export default function MealDetails({
   onUpdate,
   isSaving = false,
 }: MealDetailsProps) {
-  const confirm = useConfirm();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(meal?.name || "");
   const [editedTime, setEditedTime] = useState(meal?.time || "");
@@ -66,15 +64,9 @@ export default function MealDetails({
   };
 
   const handleDelete = async () => {
-    if (!onDelete) return;
-    const accepted = await confirm({
-      title: "Delete meal",
-      message: "Are you sure you want to delete this meal?",
-      confirmText: "Delete",
-      cancelText: "Cancel",
-      isDangerous: true,
-    });
-    if (accepted) await onDelete(meal.id);
+    if (onDelete && confirm("Are you sure you want to delete this meal?")) {
+      await onDelete(meal.id);
+    }
   };
 
   if (isEditing) {

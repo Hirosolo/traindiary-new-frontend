@@ -3,18 +3,15 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
-  exportWorkoutDayPlanCode,
   createWorkoutDayPlan,
   deleteWorkoutDayPlan,
   fetchExercises,
   fetchWorkoutTypes,
   fetchWorkoutDayPlans,
-  importWorkoutDayPlanFromCode,
   updateWorkoutDayPlan,
   type ApiExercise,
   type ApiWorkoutDayPlan,
 } from "@/lib/api/workouts";
-import { useConfirm, useToast } from "@/contexts/FeedbackContext";
 
 type PlanExerciseDraft = {
   exercise_id: number;
@@ -32,8 +29,6 @@ interface PlanDayManagerModalProps {
 }
 
 export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerModalProps) {
-  const toast = useToast();
-  const confirm = useConfirm();
   const [plans, setPlans] = useState<ApiWorkoutDayPlan[]>([]);
   const [exercises, setExercises] = useState<ApiExercise[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,8 +48,6 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [draftExercises, setDraftExercises] = useState<PlanExerciseDraft[]>([]);
-  const [importCode, setImportCode] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
 
   const WORKOUT_TYPE_ICONS: Record<string, string> = {
     Push: "fitness_center",
@@ -135,21 +128,6 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
     return ["All", ...Array.from(cats)];
   }, [exercises]);
 
-  const selectedPlanCode = useMemo(() => {
-    if (!selectedPlan) return "";
-    return exportWorkoutDayPlanCode({
-      name: selectedPlan.name,
-      type: selectedPlan.type,
-      notes: selectedPlan.notes,
-      exercises: (selectedPlan.exercises || []).map((item, index) => ({
-        exercise_id: item.exercise_id,
-        planned_sets: item.planned_sets,
-        planned_reps: item.planned_reps,
-        sort_order: item.sort_order ?? index,
-      })),
-    });
-  }, [selectedPlan]);
-
   const startCreate = () => {
     setEditingPlanId(null);
     setName("");
@@ -219,11 +197,11 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
 
   const savePlan = async () => {
     if (!name.trim()) {
-      toast.warning("Please provide a plan name");
+      alert("Please provide a plan name");
       return;
     }
     if (draftExercises.length === 0) {
-      toast.warning("Please add at least one exercise");
+      alert("Please add at least one exercise");
       return;
     }
 
@@ -257,25 +235,16 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
       setSearch("");
       setCategoryFilter("All");
       setDraftExercises([]);
-      toast.success(editingPlanId ? "Plan updated" : "Plan created");
     } catch (error) {
       console.error("Failed to save day plan", error);
-      toast.error(error instanceof Error ? error.message : "Failed to save day plan");
+      alert(error instanceof Error ? error.message : "Failed to save day plan");
     } finally {
       setIsSaving(false);
     }
   };
 
   const removePlan = async (planId: number) => {
-    const allowed = await confirm({
-      title: "Delete day plan",
-      message: "This action cannot be undone. Do you want to continue?",
-      confirmText: "Delete",
-      cancelText: "Cancel",
-      isDangerous: true,
-    });
-    if (!allowed) return;
-
+    if (!confirm("Delete this day plan?")) return;
     try {
       await deleteWorkoutDayPlan(planId);
       await refreshPlans();
@@ -284,39 +253,10 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
         setEditingPlanId(null);
       }
       if (selectedPlan?.plan_id === planId) setSelectedPlan(null);
-      toast.success("Plan deleted");
     } catch (error) {
       console.error("Failed to delete day plan", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete day plan");
+      alert(error instanceof Error ? error.message : "Failed to delete day plan");
     }
-  };
-
-  const handleImportByCode = async () => {
-    if (!importCode.trim()) {
-      toast.warning("Paste a plan code first");
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const imported = await importWorkoutDayPlanFromCode(importCode);
-      await refreshPlans();
-      setImportCode("");
-      setSelectedPlan(imported);
-      setMode("view");
-      toast.success("Plan imported");
-    } catch (error) {
-      console.error("Failed to import by plan code", error);
-      toast.error(error instanceof Error ? error.message : "Failed to import plan code");
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  const handleExportPlanCode = async () => {
-    if (!selectedPlanCode) return;
-    await navigator.clipboard.writeText(selectedPlanCode);
-    toast.success("Plan code copied");
   };
 
   if (!isOpen) return null;
@@ -343,25 +283,6 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-black uppercase tracking-widest text-text-dim">Saved Plans</h3>
                 <button onClick={startCreate} className="text-xs font-black uppercase tracking-widest text-primary">Create</button>
-              </div>
-              <div className="border border-white/10 rounded-xl p-3 bg-surface-card space-y-2">
-                <p className="text-[10px] uppercase tracking-widest text-text-dim font-black">Import By Plan Code</p>
-                <div className="flex gap-2">
-                  <input
-                    value={importCode}
-                    onChange={(e) => setImportCode(e.target.value)}
-                    placeholder="Paste plan code"
-                    className="flex-1 bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void handleImportByCode()}
-                    disabled={isImporting}
-                    className="px-3 py-2 rounded-lg bg-primary text-white text-xs font-black uppercase tracking-widest disabled:opacity-60"
-                  >
-                    {isImporting ? "Importing" : "Import"}
-                  </button>
-                </div>
               </div>
               <div className="space-y-2">
                 {isLoading && <p className="text-sm text-text-dim">Loading plans...</p>}
@@ -393,19 +314,6 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
                 <h3 className="text-lg font-bold">{selectedPlan.name}</h3>
                 <p className="text-[11px] text-text-dim uppercase tracking-wider mt-1">{selectedPlan.type || "General"}</p>
                 {selectedPlan.notes ? <p className="text-sm text-text-dim mt-2">{selectedPlan.notes}</p> : null}
-                <div className="mt-3 space-y-2">
-                  <p className="text-[10px] uppercase tracking-widest text-text-dim font-black">Plan Code</p>
-                  <div className="flex gap-2">
-                    <input readOnly value={selectedPlanCode} className="flex-1 bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-xs" />
-                    <button
-                      type="button"
-                      onClick={() => void handleExportPlanCode()}
-                      className="px-3 py-2 rounded-lg bg-white/10 text-xs font-black uppercase tracking-widest"
-                    >
-                      Export
-                    </button>
-                  </div>
-                </div>
               </div>
               <div className="space-y-2">
                 {(selectedPlan.exercises || []).map((item) => (

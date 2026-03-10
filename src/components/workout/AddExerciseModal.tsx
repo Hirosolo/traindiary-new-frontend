@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchExercises, type ApiExercise } from "@/lib/api/workouts";
-import { useToast } from "@/contexts/FeedbackContext";
 
 export interface ExerciseToAdd {
   id: string | number;
@@ -43,7 +42,6 @@ export default function AddExerciseModal({
   onSubmit,
   existingExerciseIds,
 }: AddExerciseModalProps) {
-  const toast = useToast();
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -119,7 +117,7 @@ export default function AddExerciseModal({
 
   const handleNext = () => {
     if (selectedExercises.length === 0) {
-      toast.warning("Please select at least one exercise");
+      alert("Please select at least one exercise");
       return;
     }
     setStep(2);
@@ -131,7 +129,7 @@ export default function AddExerciseModal({
 
   const handleSubmit = async () => {
     if (selectedExercises.length === 0) {
-      toast.warning("Please select at least one exercise");
+      alert("Please select at least one exercise");
       return;
     }
 
@@ -155,7 +153,7 @@ export default function AddExerciseModal({
       onClose();
     } catch (error) {
       console.error("Failed to add exercises", error);
-      toast.error(error instanceof Error ? error.message : "Unable to add exercises");
+      alert(error instanceof Error ? error.message : "Unable to add exercises");
     } finally {
       setIsSubmitting(false);
     }

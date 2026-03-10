@@ -9,7 +9,7 @@ export default function AnimatedProtocolButton({ ...rest }: AnimatedProtocolButt
         <section className="flex justify-center items-center">
             <button
                 {...rest}
-                className="group relative flex min-h-[44px] cursor-pointer justify-center p-3 rounded-md bg-white/5 border border-white/10 text-white font-semibold transition-colors hover:bg-white/10"
+                className="group relative flex justify-center p-2 rounded-md bg-white/5 border border-white/10 text-white font-semibold transition-colors hover:bg-white/10"
             >
                 <span className="material-symbols-outlined w-5 h-5 flex items-center justify-center text-[20px] group-hover:text-primary transition-colors">
                     bolt
