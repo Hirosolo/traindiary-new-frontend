@@ -3,11 +3,13 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
+  buildWorkoutDayPlanHash,
   createWorkoutDayPlan,
   deleteWorkoutDayPlan,
   fetchExercises,
   fetchWorkoutTypes,
   fetchWorkoutDayPlans,
+  importWorkoutDayPlanFromHash,
   updateWorkoutDayPlan,
   type ApiExercise,
   type ApiWorkoutDayPlan,
@@ -48,6 +50,8 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [draftExercises, setDraftExercises] = useState<PlanExerciseDraft[]>([]);
+  const [importHash, setImportHash] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   const WORKOUT_TYPE_ICONS: Record<string, string> = {
     Push: "fitness_center",
@@ -127,6 +131,21 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
     const cats = new Set(exercises.map((item) => item.category || "Uncategorized"));
     return ["All", ...Array.from(cats)];
   }, [exercises]);
+
+  const selectedPlanHash = useMemo(() => {
+    if (!selectedPlan) return "";
+    return buildWorkoutDayPlanHash({
+      name: selectedPlan.name,
+      type: selectedPlan.type,
+      notes: selectedPlan.notes,
+      exercises: (selectedPlan.exercises || []).map((item, index) => ({
+        exercise_id: item.exercise_id,
+        planned_sets: item.planned_sets,
+        planned_reps: item.planned_reps,
+        sort_order: item.sort_order ?? index,
+      })),
+    });
+  }, [selectedPlan]);
 
   const startCreate = () => {
     setEditingPlanId(null);
@@ -259,6 +278,27 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
     }
   };
 
+  const handleImportByHash = async () => {
+    if (!importHash.trim()) {
+      alert("Paste a plan hash first");
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const imported = await importWorkoutDayPlanFromHash(importHash);
+      await refreshPlans();
+      setImportHash("");
+      setSelectedPlan(imported);
+      setMode("view");
+    } catch (error) {
+      console.error("Failed to import by hash", error);
+      alert(error instanceof Error ? error.message : "Failed to import plan hash");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -283,6 +323,25 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-black uppercase tracking-widest text-text-dim">Saved Plans</h3>
                 <button onClick={startCreate} className="text-xs font-black uppercase tracking-widest text-primary">Create</button>
+              </div>
+              <div className="border border-white/10 rounded-xl p-3 bg-surface-card space-y-2">
+                <p className="text-[10px] uppercase tracking-widest text-text-dim font-black">Import By Hash</p>
+                <div className="flex gap-2">
+                  <input
+                    value={importHash}
+                    onChange={(e) => setImportHash(e.target.value)}
+                    placeholder="Paste tdp1 hash"
+                    className="flex-1 bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleImportByHash()}
+                    disabled={isImporting}
+                    className="px-3 py-2 rounded-lg bg-primary text-white text-xs font-black uppercase tracking-widest disabled:opacity-60"
+                  >
+                    {isImporting ? "Importing" : "Import"}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 {isLoading && <p className="text-sm text-text-dim">Loading plans...</p>}
@@ -314,6 +373,19 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
                 <h3 className="text-lg font-bold">{selectedPlan.name}</h3>
                 <p className="text-[11px] text-text-dim uppercase tracking-wider mt-1">{selectedPlan.type || "General"}</p>
                 {selectedPlan.notes ? <p className="text-sm text-text-dim mt-2">{selectedPlan.notes}</p> : null}
+                <div className="mt-3 space-y-2">
+                  <p className="text-[10px] uppercase tracking-widest text-text-dim font-black">Share Hash</p>
+                  <div className="flex gap-2">
+                    <input readOnly value={selectedPlanHash} className="flex-1 bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-xs" />
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(selectedPlanHash)}
+                      className="px-3 py-2 rounded-lg bg-white/10 text-xs font-black uppercase tracking-widest"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
                 {(selectedPlan.exercises || []).map((item) => (

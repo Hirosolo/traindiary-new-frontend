@@ -318,7 +318,7 @@ export default function WorkoutDetails({
                                           type="number"
                                           value={set.weight || ""}
                                           onChange={(e) => onUpdateSet(exercise.id, set.id, "weight", parseFloat(e.target.value) || 0)}
-                                          placeholder="0"
+                                          placeholder={String(exercise.personalRecord?.weight_kg ?? 0)}
                                         />
                                       )}
                                     </div>

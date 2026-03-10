@@ -113,6 +113,18 @@ export interface ApiWorkoutDayPlan {
   exercises: ApiWorkoutDayPlanExercise[];
 }
 
+export type PlanHashPayload = {
+  name: string;
+  type?: string | null;
+  notes?: string | null;
+  exercises: Array<{
+    exercise_id: number;
+    planned_sets: number;
+    planned_reps: number;
+    sort_order: number;
+  }>;
+};
+
 export type ApiWorkoutSessionsResponse = ApiWorkoutSession[] | { sessions: ApiWorkoutSession[] };
 
 // ─── Workout Sessions Monthly Cache Helpers ──────────────────────────────────
@@ -267,7 +279,15 @@ export async function addPlannedExercises(payload: {
 }
 
 export async function fetchWorkoutDayPlans(): Promise<ApiWorkoutDayPlan[]> {
-  return apiFetch<ApiWorkoutDayPlan[]>('/workout-day-plans');
+  const userId = getUserIdFromToken() ?? "anon";
+  const cached = getWorkoutDayPlansCache(userId);
+  if (cached) {
+    return cached;
+  }
+
+  const plans = await apiFetch<ApiWorkoutDayPlan[]>('/workout-day-plans');
+  setWorkoutDayPlansCache(userId, plans);
+  return plans;
 }
 
 export async function createWorkoutDayPlan(payload: {
@@ -281,7 +301,7 @@ export async function createWorkoutDayPlan(payload: {
     sort_order?: number;
   }>;
 }): Promise<ApiWorkoutDayPlan> {
-  return apiFetch<ApiWorkoutDayPlan>('/workout-day-plans', {
+  const created = await apiFetch<ApiWorkoutDayPlan>('/workout-day-plans', {
     method: 'POST',
     body: JSON.stringify({
       name: payload.name,
@@ -295,6 +315,9 @@ export async function createWorkoutDayPlan(payload: {
       })),
     }),
   });
+
+  invalidateWorkoutDayPlansCache(getUserIdFromToken() ?? "anon");
+  return created;
 }
 
 export async function updateWorkoutDayPlan(
@@ -311,7 +334,7 @@ export async function updateWorkoutDayPlan(
     }>;
   }
 ): Promise<ApiWorkoutDayPlan> {
-  return apiFetch<ApiWorkoutDayPlan>(`/workout-day-plans/${planId}`, {
+  const updated = await apiFetch<ApiWorkoutDayPlan>(`/workout-day-plans/${planId}`, {
     method: 'PUT',
     body: JSON.stringify({
       name: payload.name,
@@ -325,11 +348,97 @@ export async function updateWorkoutDayPlan(
       })),
     }),
   });
+
+  invalidateWorkoutDayPlansCache(getUserIdFromToken() ?? "anon");
+  return updated;
 }
 
 export async function deleteWorkoutDayPlan(planId: number | string): Promise<{ plan_id: number }> {
-  return apiFetch<{ plan_id: number }>(`/workout-day-plans/${planId}`, {
+  const deleted = await apiFetch<{ plan_id: number }>(`/workout-day-plans/${planId}`, {
     method: 'DELETE',
+  });
+
+  invalidateWorkoutDayPlansCache(getUserIdFromToken() ?? "anon");
+  return deleted;
+}
+
+function fnv1aHash(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function toBase64Url(input: string): string {
+  if (typeof window === "undefined") return "";
+  const encoded = btoa(unescape(encodeURIComponent(input)));
+  return encoded.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function fromBase64Url(input: string): string {
+  const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+  return decodeURIComponent(escape(atob(padded)));
+}
+
+export function buildWorkoutDayPlanHash(plan: {
+  name: string;
+  type?: string | null;
+  notes?: string | null;
+  exercises: Array<{
+    exercise_id: number;
+    planned_sets: number;
+    planned_reps: number;
+    sort_order?: number;
+  }>;
+}): string {
+  const payload: PlanHashPayload = {
+    name: plan.name,
+    type: plan.type ?? null,
+    notes: plan.notes ?? null,
+    exercises: plan.exercises
+      .map((item, index) => ({
+        exercise_id: Number(item.exercise_id),
+        planned_sets: Number(item.planned_sets),
+        planned_reps: Number(item.planned_reps),
+        sort_order: Number(item.sort_order ?? index),
+      }))
+      .sort((a, b) => a.sort_order - b.sort_order),
+  };
+
+  const payloadStr = JSON.stringify(payload);
+  const checksum = fnv1aHash(payloadStr);
+  return `tdp1.${checksum}.${toBase64Url(payloadStr)}`;
+}
+
+export function parseWorkoutDayPlanHash(hash: string): PlanHashPayload | null {
+  const input = hash.trim();
+  if (!input.startsWith("tdp1.")) return null;
+  const parts = input.split(".");
+  if (parts.length !== 3) return null;
+
+  const checksum = parts[1];
+  const payloadStr = fromBase64Url(parts[2]);
+  if (fnv1aHash(payloadStr) !== checksum) return null;
+
+  const parsed = JSON.parse(payloadStr) as PlanHashPayload;
+  if (!parsed?.name || !Array.isArray(parsed.exercises)) return null;
+  return parsed;
+}
+
+export async function importWorkoutDayPlanFromHash(hash: string): Promise<ApiWorkoutDayPlan> {
+  const parsed = parseWorkoutDayPlanHash(hash);
+  if (!parsed) {
+    throw new Error("Invalid plan hash");
+  }
+
+  return createWorkoutDayPlan({
+    name: parsed.name,
+    type: parsed.type ?? null,
+    notes: parsed.notes ?? null,
+    exercises: parsed.exercises,
   });
 }
 
@@ -476,6 +585,10 @@ export async function deleteExerciseLog(logId: string | number) {
 
 const EXERCISES_VERSION_KEY = 'exercises_version';
 const EXERCISES_DATA_KEY = 'exercises_data';
+const PERSONAL_RECORDS_CACHE_KEY = 'personal_records_cache';
+const PERSONAL_RECORDS_FETCHED_KEY = 'personal_records_fetched';
+const WORKOUT_DAY_PLANS_CACHE_KEY = 'workout_day_plans_cache';
+const WORKOUT_DAY_PLANS_FETCHED_KEY = 'workout_day_plans_fetched';
 
 function getTodayVersion(): string {
   const now = new Date();
@@ -483,6 +596,67 @@ function getTodayVersion(): string {
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   const yyyy = String(now.getFullYear());
   return `${dd}${mm}${yyyy}`;
+}
+
+function setPersonalRecordsCache(exercises: ApiExercise[]): void {
+  if (typeof window === 'undefined') return;
+
+  const recordMap: Record<string, { weight_kg: number; reps: number; achieved_at?: string }> = {};
+  exercises.forEach((exercise) => {
+    const top = (exercise.personal_records || [])[0];
+    if (!top) return;
+    recordMap[String(exercise.exercise_id)] = {
+      weight_kg: Number(top.weight_kg || 0),
+      reps: Number(top.reps || 0),
+      achieved_at: top.achieved_at,
+    };
+  });
+
+  localStorage.setItem(PERSONAL_RECORDS_CACHE_KEY, JSON.stringify(recordMap));
+  localStorage.setItem(PERSONAL_RECORDS_FETCHED_KEY, getTodayDateStr());
+}
+
+export function getCachedPersonalRecord(exerciseId: number | string): { weight_kg: number; reps: number; achieved_at?: string } | null {
+  if (typeof window === 'undefined') return null;
+  const fetched = localStorage.getItem(PERSONAL_RECORDS_FETCHED_KEY);
+  if (fetched !== getTodayDateStr()) return null;
+
+  const raw = localStorage.getItem(PERSONAL_RECORDS_CACHE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, { weight_kg: number; reps: number; achieved_at?: string }>;
+    return parsed[String(exerciseId)] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function getWorkoutDayPlansCache(userId: number | string): ApiWorkoutDayPlan[] | null {
+  if (typeof window === 'undefined') return null;
+  const fetched = localStorage.getItem(`${WORKOUT_DAY_PLANS_FETCHED_KEY}_${userId}`);
+  if (fetched !== getTodayDateStr()) return null;
+
+  const raw = localStorage.getItem(`${WORKOUT_DAY_PLANS_CACHE_KEY}_${userId}`);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as ApiWorkoutDayPlan[];
+  } catch {
+    return null;
+  }
+}
+
+function setWorkoutDayPlansCache(userId: number | string, plans: ApiWorkoutDayPlan[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(`${WORKOUT_DAY_PLANS_CACHE_KEY}_${userId}`, JSON.stringify(plans));
+  localStorage.setItem(`${WORKOUT_DAY_PLANS_FETCHED_KEY}_${userId}`, getTodayDateStr());
+}
+
+export function invalidateWorkoutDayPlansCache(userId: number | string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(`${WORKOUT_DAY_PLANS_CACHE_KEY}_${userId}`);
+  localStorage.removeItem(`${WORKOUT_DAY_PLANS_FETCHED_KEY}_${userId}`);
 }
 
 export async function fetchExercises(): Promise<ApiExercise[]> {
@@ -532,6 +706,7 @@ export async function fetchExercises(): Promise<ApiExercise[]> {
 
     localStorage.setItem(EXERCISES_VERSION_KEY, result.version);
     localStorage.setItem(EXERCISES_DATA_KEY, JSON.stringify(updatedExercises));
+    setPersonalRecordsCache(updatedExercises);
     return updatedExercises;
   } else {
     // Data unchanged: if local cache is empty, perform full fetch to avoid blank state.
@@ -549,10 +724,12 @@ export async function fetchExercises(): Promise<ApiExercise[]> {
       resolved.sort((a, b) => a.name.localeCompare(b.name));
       localStorage.setItem(EXERCISES_VERSION_KEY, result.version);
       localStorage.setItem(EXERCISES_DATA_KEY, JSON.stringify(resolved));
+      setPersonalRecordsCache(resolved);
       return resolved;
     }
 
     localStorage.setItem(EXERCISES_VERSION_KEY, result.version);
+    setPersonalRecordsCache(localExercises);
     return localExercises;
   }
 }

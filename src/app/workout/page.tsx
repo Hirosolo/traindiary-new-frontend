@@ -30,6 +30,7 @@ import {
   logExerciseSet,
   fetchProgress,
   fetchSummary,
+  getCachedPersonalRecord,
   addPlannedExercises,
   updateWorkoutsMonthCache,
   syncWorkoutLogs,
@@ -175,6 +176,8 @@ export default function WorkoutPage() {
             status: false,
           }));
 
+    const personalRecord = detail.personal_record ?? (detail.exercise_id ? getCachedPersonalRecord(detail.exercise_id) : null);
+
     return {
       id: (detail.session_detail_id ?? detail.exercise_id ?? `exercise-${Date.now()}`).toString(),
       exercise_id: detail.exercise_id,
@@ -183,7 +186,7 @@ export default function WorkoutPage() {
       type: detail.exercises?.type,
       isCardio,
       sets,
-      personalRecord: detail.personal_record,
+      personalRecord,
     };
   }, []);
 
@@ -645,14 +648,20 @@ export default function WorkoutPage() {
         </div>
 
         {/* LOG BUTTON (MOBILE ONLY) */}
-            <div className="fixed bottom-24 right-6 z-40">
-           <button 
-             onClick={() => { setErrorMessage(null); setIsLogWorkoutModalOpen(true); }}
-             className="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all active:scale-95"
-             aria-label="Create new session"
-           >
-              <span className="material-symbols-outlined text-3xl">add</span>
-           </button>
+        <div
+          className="fixed right-4 z-[60] lg:hidden"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)" }}
+        >
+          <button
+            onClick={() => {
+              setErrorMessage(null);
+              setIsLogWorkoutModalOpen(true);
+            }}
+            className="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all active:scale-95"
+            aria-label="Create new session"
+          >
+            <span className="material-symbols-outlined text-3xl">add</span>
+          </button>
         </div>
 
             <div className="hidden lg:block fixed bottom-44 right-6 z-40">
