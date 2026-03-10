@@ -14,6 +14,7 @@ import {
   type ApiExercise,
   type ApiWorkoutDayPlan,
 } from "@/lib/api/workouts";
+import { useConfirm, useToast } from "@/contexts/FeedbackContext";
 
 type PlanExerciseDraft = {
   exercise_id: number;
@@ -31,6 +32,8 @@ interface PlanDayManagerModalProps {
 }
 
 export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerModalProps) {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [plans, setPlans] = useState<ApiWorkoutDayPlan[]>([]);
   const [exercises, setExercises] = useState<ApiExercise[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -216,11 +219,11 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
 
   const savePlan = async () => {
     if (!name.trim()) {
-      alert("Please provide a plan name");
+      toast.warning("Please provide a plan name");
       return;
     }
     if (draftExercises.length === 0) {
-      alert("Please add at least one exercise");
+      toast.warning("Please add at least one exercise");
       return;
     }
 
@@ -254,16 +257,25 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
       setSearch("");
       setCategoryFilter("All");
       setDraftExercises([]);
+      toast.success(editingPlanId ? "Plan updated" : "Plan created");
     } catch (error) {
       console.error("Failed to save day plan", error);
-      alert(error instanceof Error ? error.message : "Failed to save day plan");
+      toast.error(error instanceof Error ? error.message : "Failed to save day plan");
     } finally {
       setIsSaving(false);
     }
   };
 
   const removePlan = async (planId: number) => {
-    if (!confirm("Delete this day plan?")) return;
+    const allowed = await confirm({
+      title: "Delete day plan",
+      message: "This action cannot be undone. Do you want to continue?",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      isDangerous: true,
+    });
+    if (!allowed) return;
+
     try {
       await deleteWorkoutDayPlan(planId);
       await refreshPlans();
@@ -272,15 +284,16 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
         setEditingPlanId(null);
       }
       if (selectedPlan?.plan_id === planId) setSelectedPlan(null);
+      toast.success("Plan deleted");
     } catch (error) {
       console.error("Failed to delete day plan", error);
-      alert(error instanceof Error ? error.message : "Failed to delete day plan");
+      toast.error(error instanceof Error ? error.message : "Failed to delete day plan");
     }
   };
 
   const handleImportByCode = async () => {
     if (!importCode.trim()) {
-      alert("Paste a plan code first");
+      toast.warning("Paste a plan code first");
       return;
     }
 
@@ -291,9 +304,10 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
       setImportCode("");
       setSelectedPlan(imported);
       setMode("view");
+      toast.success("Plan imported");
     } catch (error) {
       console.error("Failed to import by plan code", error);
-      alert(error instanceof Error ? error.message : "Failed to import plan code");
+      toast.error(error instanceof Error ? error.message : "Failed to import plan code");
     } finally {
       setIsImporting(false);
     }
@@ -302,7 +316,7 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
   const handleExportPlanCode = async () => {
     if (!selectedPlanCode) return;
     await navigator.clipboard.writeText(selectedPlanCode);
-    alert("Plan code copied");
+    toast.success("Plan code copied");
   };
 
   if (!isOpen) return null;

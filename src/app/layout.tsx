@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import FloatingNav from "@/components/ui/floating-nav";
 import { PageLoader } from "@/components/ui/page-loader";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { FeedbackProvider } from "@/contexts/FeedbackContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,9 +31,11 @@ export default function RootLayout({
       </head>
       <body className="bg-background-dark text-white font-body antialiased selection:bg-primary/30 overflow-x-hidden">
         <AuthProvider>
-          <PageLoader />
-          {children}
-          <FloatingNav />
+          <FeedbackProvider>
+            <PageLoader />
+            {children}
+            <FloatingNav />
+          </FeedbackProvider>
         </AuthProvider>
       </body>
     </html>

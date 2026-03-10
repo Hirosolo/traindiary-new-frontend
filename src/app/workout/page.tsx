@@ -15,6 +15,7 @@ import LogWorkoutModal, { NewWorkoutSession } from "@/components/workout/LogWork
 import AddExerciseModal, { ExerciseToAdd } from "@/components/workout/AddExerciseModal";
 import PlanDayManagerModal from "@/components/workout/PlanDayManagerModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/FeedbackContext";
 import {
   setWorkoutSessionStatus,
   createWorkoutSession,
@@ -51,6 +52,7 @@ type ApiMuscleSplit = {
 
 export default function WorkoutPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const userId = user?.user_id ?? user?.id ?? 1;
   const now = new Date();
   
@@ -717,7 +719,7 @@ export default function WorkoutPage() {
                             }
                           } catch (error) {
                             console.error('Failed to delete exercise:', error);
-                            alert('Failed to delete exercise. Please try again.');
+                            toast.error('Failed to delete exercise. Please try again.');
                           }
                       }}
                       onDeleteSet={(exId, sId) => {
