@@ -649,7 +649,7 @@ export default function WorkoutPage() {
 
         {/* LOG BUTTON (MOBILE ONLY) */}
         <div
-          className="fixed bottom-24 right-4 z-[90] lg:hidden"
+          className="fixed right-4 lg:right-6 z-[90]"
           style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
         >
           <button
