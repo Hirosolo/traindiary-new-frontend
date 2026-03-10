@@ -301,6 +301,7 @@ export async function createWorkoutDayPlan(payload: {
     sort_order?: number;
   }>;
 }): Promise<ApiWorkoutDayPlan> {
+  const userId = getUserIdFromToken() ?? "anon";
   const created = await apiFetch<ApiWorkoutDayPlan>('/workout-day-plans', {
     method: 'POST',
     body: JSON.stringify({
@@ -316,7 +317,7 @@ export async function createWorkoutDayPlan(payload: {
     }),
   });
 
-  invalidateWorkoutDayPlansCache(getUserIdFromToken() ?? "anon");
+  updateWorkoutDayPlansCache(userId, (plans) => [created, ...plans]);
   return created;
 }
 
@@ -334,6 +335,7 @@ export async function updateWorkoutDayPlan(
     }>;
   }
 ): Promise<ApiWorkoutDayPlan> {
+  const userId = getUserIdFromToken() ?? "anon";
   const updated = await apiFetch<ApiWorkoutDayPlan>(`/workout-day-plans/${planId}`, {
     method: 'PUT',
     body: JSON.stringify({
@@ -349,16 +351,29 @@ export async function updateWorkoutDayPlan(
     }),
   });
 
-  invalidateWorkoutDayPlansCache(getUserIdFromToken() ?? "anon");
+  updateWorkoutDayPlansCache(userId, (plans) => {
+    const next = plans.map((plan) =>
+      Number(plan.plan_id) === Number(updated.plan_id) ? updated : plan
+    );
+
+    if (next.some((plan) => Number(plan.plan_id) === Number(updated.plan_id))) {
+      return next;
+    }
+
+    return [updated, ...next];
+  });
   return updated;
 }
 
 export async function deleteWorkoutDayPlan(planId: number | string): Promise<{ plan_id: number }> {
+  const userId = getUserIdFromToken() ?? "anon";
   const deleted = await apiFetch<{ plan_id: number }>(`/workout-day-plans/${planId}`, {
     method: 'DELETE',
   });
 
-  invalidateWorkoutDayPlansCache(getUserIdFromToken() ?? "anon");
+  updateWorkoutDayPlansCache(userId, (plans) =>
+    plans.filter((plan) => Number(plan.plan_id) !== Number(deleted.plan_id))
+  );
   return deleted;
 }
 
@@ -673,6 +688,14 @@ function setWorkoutDayPlansCache(userId: number | string, plans: ApiWorkoutDayPl
   if (typeof window === 'undefined') return;
   localStorage.setItem(`${WORKOUT_DAY_PLANS_CACHE_KEY}_${userId}`, JSON.stringify(plans));
   localStorage.setItem(`${WORKOUT_DAY_PLANS_FETCHED_KEY}_${userId}`, getTodayDateStr());
+}
+
+function updateWorkoutDayPlansCache(
+  userId: number | string,
+  updater: (plans: ApiWorkoutDayPlan[]) => ApiWorkoutDayPlan[]
+): void {
+  const current = getWorkoutDayPlansCache(userId) ?? [];
+  setWorkoutDayPlansCache(userId, updater(current));
 }
 
 export function invalidateWorkoutDayPlansCache(userId: number | string): void {
