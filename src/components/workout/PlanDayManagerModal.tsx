@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
   createWorkoutDayPlan,
@@ -33,6 +34,9 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [workoutTypes, setWorkoutTypes] = useState<string[]>([]);
+  const [isLoadingExercises, setIsLoadingExercises] = useState(false);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(false);
+  const [exerciseLoadError, setExerciseLoadError] = useState<string | null>(null);
 
   const [mode, setMode] = useState<PlanManagerMode>("list");
   const [selectedPlan, setSelectedPlan] = useState<ApiWorkoutDayPlan | null>(null);
@@ -42,39 +46,87 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
   const [type, setType] = useState("");
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [draftExercises, setDraftExercises] = useState<PlanExerciseDraft[]>([]);
+
+  const WORKOUT_TYPE_ICONS: Record<string, string> = {
+    Push: "fitness_center",
+    Pull: "rowing",
+    Legs: "foot_bones",
+    "Full Body": "accessibility_new",
+    Upper: "vertical_align_top",
+    Lower: "vertical_align_bottom",
+    "Upper Body": "vertical_align_top",
+    "Lower Body": "vertical_align_bottom",
+    Cardio: "directions_run",
+  };
 
   useEffect(() => {
     if (!isOpen) return;
 
-    const load = async () => {
+    const loadPlans = async () => {
       setIsLoading(true);
       try {
-        const [planData, exerciseData, typeData] = await Promise.all([
-          fetchWorkoutDayPlans(),
-          fetchExercises(),
-          fetchWorkoutTypes(),
-        ]);
+        const planData = await fetchWorkoutDayPlans();
         setPlans(planData);
-        setExercises(exerciseData);
-        setWorkoutTypes(typeData);
       } catch (error) {
-        console.error("Failed to load day plan manager data", error);
+        console.error("Failed to load day plans", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    load();
+    const loadExercises = async () => {
+      setIsLoadingExercises(true);
+      setExerciseLoadError(null);
+      try {
+        const exerciseData = await fetchExercises();
+        setExercises(exerciseData);
+      } catch (error) {
+        console.error("Failed to load exercises", error);
+        setExerciseLoadError(error instanceof Error ? error.message : "Unable to load exercises");
+        setExercises([]);
+      } finally {
+        setIsLoadingExercises(false);
+      }
+    };
+
+    const loadWorkoutTypes = async () => {
+      setIsLoadingTypes(true);
+      try {
+        const typeData = await fetchWorkoutTypes();
+        setWorkoutTypes(typeData);
+      } catch (error) {
+        console.error("Failed to load workout types", error);
+        setWorkoutTypes(["Push", "Pull", "Legs", "Cardio", "Full Body"]);
+      } finally {
+        setIsLoadingTypes(false);
+      }
+    };
+
+    void loadPlans();
+    void loadExercises();
+    void loadWorkoutTypes();
     setMode("list");
     setSelectedPlan(null);
   }, [isOpen]);
 
   const filteredExercises = useMemo(() => {
+    const selectedIds = new Set(draftExercises.map((item) => item.exercise_id));
     const query = search.trim().toLowerCase();
-    if (!query) return exercises;
-    return exercises.filter((item) => item.name.toLowerCase().includes(query));
-  }, [exercises, search]);
+    return exercises.filter((item) => {
+      if (selectedIds.has(item.exercise_id)) return false;
+      const matchesSearch = !query || item.name.toLowerCase().includes(query);
+      const itemCategory = item.category || "Uncategorized";
+      const matchesCategory = categoryFilter === "All" || itemCategory === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [exercises, search, categoryFilter, draftExercises]);
+
+  const categories = useMemo(() => {
+    const cats = new Set(exercises.map((item) => item.category || "Uncategorized"));
+    return ["All", ...Array.from(cats)];
+  }, [exercises]);
 
   const startCreate = () => {
     setEditingPlanId(null);
@@ -82,6 +134,7 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
     setType("");
     setNotes("");
     setSearch("");
+    setCategoryFilter("All");
     setDraftExercises([]);
     setMode("create");
   };
@@ -100,6 +153,7 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
         planned_reps: item.planned_reps,
       }))
     );
+    setCategoryFilter("All");
     setMode("edit");
   };
 
@@ -179,6 +233,7 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
       setType("");
       setNotes("");
       setSearch("");
+      setCategoryFilter("All");
       setDraftExercises([]);
     } catch (error) {
       console.error("Failed to save day plan", error);
@@ -282,35 +337,105 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
               </div>
 
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Plan name" className="w-full bg-surface-card border border-white/10 rounded-xl px-3 py-2" />
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="w-full bg-surface-card border border-white/10 rounded-xl px-3 py-2"
-              >
-                <option value="">Select workout type</option>
-                {workoutTypes.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-text-dim">Workout Type</h4>
+                {isLoadingTypes ? (
+                  <div className="text-center py-6 text-text-dim">
+                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {workoutTypes.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setType(item)}
+                        className={`bg-surface-card border rounded-xl p-3 text-left relative transition-colors ${
+                          type === item ? "border-primary/40" : "border-white/10 hover:border-white/20"
+                        }`}
+                      >
+                        {type === item && (
+                          <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[14px] text-primary">check</span>
+                          </div>
+                        )}
+                        <span className={`material-symbols-outlined text-base mb-1 ${type === item ? "text-primary" : "text-text-dim"}`}>
+                          {WORKOUT_TYPE_ICONS[item] || "fitness_center"}
+                        </span>
+                        <p className="text-xs font-black uppercase tracking-wide">{item}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={2} className="w-full bg-surface-card border border-white/10 rounded-xl px-3 py-2" />
 
               <div className="space-y-2">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-text-dim">Search & Add Exercises</h4>
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search exercise..." className="w-full bg-surface-card border border-white/10 rounded-xl px-3 py-2" />
-                <div className="max-h-36 overflow-y-auto border border-white/10 rounded-xl p-2 space-y-1">
-                  {filteredExercises.length === 0 && (
-                    <p className="text-xs text-text-dim px-2 py-2">No exercises found.</p>
-                  )}
-                  {filteredExercises.slice(0, 40).map((exercise) => (
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search exercise..." className="w-full bg-surface-card border border-white/10 rounded-2xl px-3 py-3" />
+
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                  {categories.map((cat) => (
                     <button
-                      key={exercise.exercise_id}
+                      key={cat}
                       type="button"
-                      onClick={() => addExercise(exercise)}
-                      className="w-full text-left px-2 py-2 rounded-lg hover:bg-white/5 flex items-center justify-between"
+                      onClick={() => setCategoryFilter(cat)}
+                      className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                        categoryFilter === cat
+                          ? "bg-primary/10 border border-primary/20 text-primary"
+                          : "bg-surface-card border border-white/5 text-text-dim"
+                      }`}
                     >
-                      <span className="text-sm">{exercise.name}</span>
-                      <span className="text-[10px] uppercase text-text-dim">{exercise.category || "General"}</span>
+                      {cat}
                     </button>
+                  ))}
+                </div>
+
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {isLoadingExercises && (
+                    <p className="text-sm text-text-dim">Loading exercises...</p>
+                  )}
+                  {exerciseLoadError && !isLoadingExercises && (
+                    <p className="text-xs text-red-400">{exerciseLoadError}</p>
+                  )}
+                  {!isLoadingExercises && !exerciseLoadError && filteredExercises.length === 0 && (
+                    <p className="text-sm text-text-dim">No exercises available. Try another filter.</p>
+                  )}
+                  {filteredExercises.map((exercise) => (
+                    <div
+                      key={exercise.exercise_id}
+                      className="bg-surface-card border border-white/10 rounded-2xl p-3 flex items-center gap-3"
+                    >
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-surface-highlight flex-shrink-0">
+                        {exercise.image ? (
+                          <Image
+                            src={exercise.image}
+                            alt={exercise.name}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-zinc-600 text-sm">fitness_center</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display font-bold text-xs uppercase tracking-tight truncate">{exercise.name}</p>
+                        <p className="text-[10px] text-text-dim truncate">{exercise.description || "No description"}</p>
+                        <span className="inline-block mt-1 px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary text-[8px] font-bold uppercase">
+                          {exercise.category || "Uncategorized"}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => addExercise(exercise)}
+                        className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white transition-colors flex items-center justify-center"
+                      >
+                        <span className="material-symbols-outlined text-lg">add</span>
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
