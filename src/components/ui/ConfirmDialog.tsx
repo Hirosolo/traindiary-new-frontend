@@ -28,7 +28,7 @@ export default function ConfirmDialog({
     <AnimatePresence>
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[220] flex items-center justify-center p-4"
           onClick={onCancel}
         >
           <motion.div
