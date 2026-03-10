@@ -648,10 +648,7 @@ export default function WorkoutPage() {
         </div>
 
         {/* LOG BUTTON (MOBILE ONLY) */}
-        <div
-          className="fixed right-4 z-[60] lg:hidden"
-          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)" }}
-        >
+        <div className="fixed bottom-24 right-4 z-[60] lg:hidden">
           <button
             onClick={() => {
               setErrorMessage(null);

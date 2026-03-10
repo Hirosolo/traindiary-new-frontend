@@ -431,7 +431,7 @@ export function parseWorkoutDayPlanHash(hash: string): PlanHashPayload | null {
 export async function importWorkoutDayPlanFromHash(hash: string): Promise<ApiWorkoutDayPlan> {
   const parsed = parseWorkoutDayPlanHash(hash);
   if (!parsed) {
-    throw new Error("Invalid plan hash");
+    throw new Error("Invalid plan code");
   }
 
   return createWorkoutDayPlan({
@@ -440,6 +440,28 @@ export async function importWorkoutDayPlanFromHash(hash: string): Promise<ApiWor
     notes: parsed.notes ?? null,
     exercises: parsed.exercises,
   });
+}
+
+export function exportWorkoutDayPlanCode(plan: {
+  name: string;
+  type?: string | null;
+  notes?: string | null;
+  exercises: Array<{
+    exercise_id: number;
+    planned_sets: number;
+    planned_reps: number;
+    sort_order?: number;
+  }>;
+}): string {
+  return buildWorkoutDayPlanHash(plan);
+}
+
+export function parseWorkoutDayPlanCode(code: string): PlanHashPayload | null {
+  return parseWorkoutDayPlanHash(code);
+}
+
+export async function importWorkoutDayPlanFromCode(code: string): Promise<ApiWorkoutDayPlan> {
+  return importWorkoutDayPlanFromHash(code);
 }
 
 export async function updateExerciseLog(payload: {

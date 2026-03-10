@@ -3,13 +3,13 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
-  buildWorkoutDayPlanHash,
+  exportWorkoutDayPlanCode,
   createWorkoutDayPlan,
   deleteWorkoutDayPlan,
   fetchExercises,
   fetchWorkoutTypes,
   fetchWorkoutDayPlans,
-  importWorkoutDayPlanFromHash,
+  importWorkoutDayPlanFromCode,
   updateWorkoutDayPlan,
   type ApiExercise,
   type ApiWorkoutDayPlan,
@@ -50,7 +50,7 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [draftExercises, setDraftExercises] = useState<PlanExerciseDraft[]>([]);
-  const [importHash, setImportHash] = useState("");
+  const [importCode, setImportCode] = useState("");
   const [isImporting, setIsImporting] = useState(false);
 
   const WORKOUT_TYPE_ICONS: Record<string, string> = {
@@ -132,9 +132,9 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
     return ["All", ...Array.from(cats)];
   }, [exercises]);
 
-  const selectedPlanHash = useMemo(() => {
+  const selectedPlanCode = useMemo(() => {
     if (!selectedPlan) return "";
-    return buildWorkoutDayPlanHash({
+    return exportWorkoutDayPlanCode({
       name: selectedPlan.name,
       type: selectedPlan.type,
       notes: selectedPlan.notes,
@@ -278,25 +278,31 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
     }
   };
 
-  const handleImportByHash = async () => {
-    if (!importHash.trim()) {
-      alert("Paste a plan hash first");
+  const handleImportByCode = async () => {
+    if (!importCode.trim()) {
+      alert("Paste a plan code first");
       return;
     }
 
     setIsImporting(true);
     try {
-      const imported = await importWorkoutDayPlanFromHash(importHash);
+      const imported = await importWorkoutDayPlanFromCode(importCode);
       await refreshPlans();
-      setImportHash("");
+      setImportCode("");
       setSelectedPlan(imported);
       setMode("view");
     } catch (error) {
-      console.error("Failed to import by hash", error);
-      alert(error instanceof Error ? error.message : "Failed to import plan hash");
+      console.error("Failed to import by plan code", error);
+      alert(error instanceof Error ? error.message : "Failed to import plan code");
     } finally {
       setIsImporting(false);
     }
+  };
+
+  const handleExportPlanCode = async () => {
+    if (!selectedPlanCode) return;
+    await navigator.clipboard.writeText(selectedPlanCode);
+    alert("Plan code copied");
   };
 
   if (!isOpen) return null;
@@ -325,17 +331,17 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
                 <button onClick={startCreate} className="text-xs font-black uppercase tracking-widest text-primary">Create</button>
               </div>
               <div className="border border-white/10 rounded-xl p-3 bg-surface-card space-y-2">
-                <p className="text-[10px] uppercase tracking-widest text-text-dim font-black">Import By Hash</p>
+                <p className="text-[10px] uppercase tracking-widest text-text-dim font-black">Import By Plan Code</p>
                 <div className="flex gap-2">
                   <input
-                    value={importHash}
-                    onChange={(e) => setImportHash(e.target.value)}
-                    placeholder="Paste tdp1 hash"
+                    value={importCode}
+                    onChange={(e) => setImportCode(e.target.value)}
+                    placeholder="Paste plan code"
                     className="flex-1 bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-xs"
                   />
                   <button
                     type="button"
-                    onClick={() => void handleImportByHash()}
+                    onClick={() => void handleImportByCode()}
                     disabled={isImporting}
                     className="px-3 py-2 rounded-lg bg-primary text-white text-xs font-black uppercase tracking-widest disabled:opacity-60"
                   >
@@ -374,15 +380,15 @@ export default function PlanDayManagerModal({ isOpen, onClose }: PlanDayManagerM
                 <p className="text-[11px] text-text-dim uppercase tracking-wider mt-1">{selectedPlan.type || "General"}</p>
                 {selectedPlan.notes ? <p className="text-sm text-text-dim mt-2">{selectedPlan.notes}</p> : null}
                 <div className="mt-3 space-y-2">
-                  <p className="text-[10px] uppercase tracking-widest text-text-dim font-black">Share Hash</p>
+                  <p className="text-[10px] uppercase tracking-widest text-text-dim font-black">Plan Code</p>
                   <div className="flex gap-2">
-                    <input readOnly value={selectedPlanHash} className="flex-1 bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-xs" />
+                    <input readOnly value={selectedPlanCode} className="flex-1 bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-xs" />
                     <button
                       type="button"
-                      onClick={() => navigator.clipboard.writeText(selectedPlanHash)}
+                      onClick={() => void handleExportPlanCode()}
                       className="px-3 py-2 rounded-lg bg-white/10 text-xs font-black uppercase tracking-widest"
                     >
-                      Copy
+                      Export
                     </button>
                   </div>
                 </div>
