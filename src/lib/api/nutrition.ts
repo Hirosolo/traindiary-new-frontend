@@ -122,7 +122,7 @@ export interface ApiMeal {
 export interface ApiDayNutrition {
   day: string;
   meals: ApiMeal[];
-  totals: ApiNutrient & { water: number };
+  totals: ApiNutrient;
 }
 
 export interface ApiMealsResponse {
