@@ -47,6 +47,7 @@ interface WorkoutDetailsProps {
   workout: WorkoutDetailsData | null;
   onClose: () => void;
   onFinishWorkout: (workoutId: string) => void;
+  onAutoSaveWorkout?: (workoutId: string) => void;
   onUpdateSet: (exerciseId: string, setId: string, field: "weight" | "reps" | "duration" | "status", value: number | boolean) => void;
   onAddSet: (exerciseId: string) => void;
   onAddExercise?: () => void;
@@ -61,6 +62,7 @@ export default function WorkoutDetails({
   workout,
   onClose,
   onFinishWorkout,
+  onAutoSaveWorkout,
   onUpdateSet,
   onAddSet,
   onAddExercise,
@@ -103,6 +105,17 @@ export default function WorkoutDetails({
       setSelectedExerciseId(workout.exercises[0].id);
     }
   }, [workout, selectedExerciseId]);
+
+  // Auto-sync debounced updates when there are unsaved changes
+  useEffect(() => {
+    if (hasUnsavedChanges && sessionStatus !== "COMPLETED") {
+      const handler = setTimeout(() => {
+        if (onAutoSaveWorkout) onAutoSaveWorkout(workout.id);
+      }, 2000); // 2 seconds debounce
+
+      return () => clearTimeout(handler);
+    }
+  }, [hasUnsavedChanges, workout, sessionStatus, onAutoSaveWorkout]);
 
   const allSetsCompleted = (exercise: Exercise) => 
     exercise.sets.length > 0 && exercise.sets.every(set => set.status === true);

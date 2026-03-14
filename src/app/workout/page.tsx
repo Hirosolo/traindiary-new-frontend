@@ -393,11 +393,48 @@ export default function WorkoutPage() {
         prev.map(s => String(s.session_id) === selectedWorkout.id ? (fresh || s) : s)
       );
 
-      setHasUnsavedChanges(false);
     } catch (e) {
       setErrorMessage("Sync failed. Check connection.");
     } finally {
       setIsSavingWorkout(false);
+    }
+  };
+
+  const handleAutoSaveWorkout = async () => {
+    if (!selectedWorkout) return;
+    if (selectedWorkout.status === 'COMPLETED' || selectedWorkout.isCompleted) return;
+    try {
+      const logsToSync = selectedWorkout.exercises.flatMap(ex => {
+        const sid = Number(ex.id);
+        const isNewExercise = isNaN(sid);
+
+        return ex.sets.map(set => {
+          const numericId = Number(set.id);
+          const isNewSet = !Number.isFinite(numericId);
+          
+          return {
+            set_id: isNewSet ? undefined : numericId,
+            session_detail_id: isNewExercise ? undefined : sid,
+            exercise_id: ex.exercise_id, 
+            actual_reps: ex.isCardio ? undefined : set.reps,
+            reps: ex.isCardio ? undefined : set.reps, 
+            duration: ex.isCardio ? set.duration ?? 0 : undefined,
+            weight_kg: ex.isCardio ? 0 : set.weight,
+            status: set.status,
+            notes: set.notes,
+          };
+        });
+      });
+
+      if (logsToSync.length > 0) {
+        await syncWorkoutLogs(selectedWorkout.id, logsToSync);
+      }
+
+      setHasUnsavedChanges(false);
+      // We don't refresh entire sessions here to avoid jumping UI or losing active input focus
+    } catch (e) {
+      // Fail silently for autosave to not interrupt user
+      console.warn("Autosave failed", e);
     }
   };
 
@@ -680,6 +717,7 @@ export default function WorkoutPage() {
                       workout={selectedWorkout}
                       onClose={() => setSelectedWorkout(null)}
                       onFinishWorkout={handleSaveWorkout}
+                      onAutoSaveWorkout={handleAutoSaveWorkout}
                       onUpdateSet={handleUpdateSet}
                       onAddSet={handleAddSet}
                       onAddExercise={handleAddExercise}
