@@ -227,15 +227,7 @@ export default function SetGoalModal({ isOpen, onClose, onSuccess }: SetGoalModa
                   </div>
                 </div>
 
-                <div className="bg-surface-card border border-white/5 rounded-2xl p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-cyan-500">water_drop</span>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">Hydration Target</p>
-                    <p className="text-xl font-display font-bold text-white">{(calcResult.hydration_ml / 1000).toFixed(2)} <span className="text-xs text-text-dim ml-1">Liters / Day</span></p>
-                  </div>
-                </div>
+
               </div>
             )}
           </div>

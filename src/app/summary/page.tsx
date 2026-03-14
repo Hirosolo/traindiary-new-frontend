@@ -19,7 +19,6 @@ type SummaryPoint = {
   fiber: number;
   sugar: number;
   gr: number;
-  water: number;
 };
 
 
@@ -39,7 +38,6 @@ export default function SummaryPage() {
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [calendarStep, setCalendarStep] = useState<"year" | "month">("year");
-  const [activeTab, setActiveTab] = useState<"nutrition" | "hydration">("nutrition");
   const [dataset, setDataset] = useState<SummaryPoint[]>([]);
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -74,7 +72,6 @@ export default function SummaryPage() {
             fiber: Math.round(serverDay?.fiber || 0),
             sugar: Math.round(serverDay?.sugar || 0),
             gr: serverDay?.gr || 0,
-            water: serverDay?.water || 0,
           });
         }
         setDataset(newDataset);
@@ -240,34 +237,8 @@ export default function SummaryPage() {
           </div>
         </div>
 
-        {/* Charts - Tabbed View */}
+        {/* Charts View */}
         <div className="px-5 mt-8">
-          {/* Tab Buttons */}
-          <div className="flex gap-3 mb-6">
-            <button
-              onClick={() => setActiveTab("nutrition")}
-              className={`px-6 py-3 rounded-xl font-bold transition-all text-sm ${
-                activeTab === "nutrition"
-                  ? "bg-primary text-white shadow-lg shadow-primary/30"
-                  : "bg-surface-card border border-white/5 text-text-dim hover:border-white/10"
-              }`}
-            >
-              Nutrition
-            </button>
-            <button
-              onClick={() => setActiveTab("hydration")}
-              className={`px-6 py-3 rounded-xl font-bold transition-all text-sm ${
-                activeTab === "hydration"
-                  ? "bg-primary text-white shadow-lg shadow-primary/30"
-                  : "bg-surface-card border border-white/5 text-text-dim hover:border-white/10"
-              }`}
-            >
-              Hydration
-            </button>
-          </div>
-
-          {/* Nutrition Tab */}
-          {activeTab === "nutrition" && (
             <div className="space-y-6">
               <section className="rounded-[2rem] bg-surface-card p-5 border border-white/5 relative overflow-hidden">
                 <div className="flex items-center justify-between mb-6">
@@ -363,52 +334,6 @@ export default function SummaryPage() {
                 </ChartContainer>
               </section>
             </div>
-          )}
-
-          {/* Hydration Tab */}
-          {activeTab === "hydration" && (
-            <section className="rounded-[2rem] bg-surface-card p-5 border border-white/5 relative overflow-hidden">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-sm font-bold tracking-tight text-white uppercase font-display italic">
-                    Hydration
-                  </h3>
-                  <p className="text-[9px] text-text-dim font-medium uppercase tracking-wider mt-0.5">
-                    Water intake per day
-                  </p>
-                </div>
-              </div>
-              <ChartContainer
-                className="h-[360px] w-full rounded-xl border border-white/5 bg-surface-card"
-                config={{ water: { label: "Water", color: "#06b6d4" } }}
-              >
-                <LineChart
-                  accessibilityLayer
-                  data={dataset}
-                  margin={{ top: 12, left: 16, right: 16, bottom: 12 }}
-                >
-                  <CartesianGrid strokeDasharray="6 6" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis
-                    dataKey="dateLabel"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={10}
-                    tick={{ fill: "#9CA3AF", fontSize: 10, letterSpacing: 0.5 }}
-                  />
-                  <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                  <Line
-                    type="monotone"
-                    dataKey="water"
-                    name="Water (ml)"
-                    stroke="var(--color-water)"
-                    strokeWidth={4}
-                    dot={{ r: 4, fill: "var(--color-water)", strokeWidth: 0 }}
-                    activeDot={{ r: 7, strokeWidth: 0 }}
-                  />
-                </LineChart>
-              </ChartContainer>
-            </section>
-          )}
         </div>
       </main>
 

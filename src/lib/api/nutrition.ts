@@ -222,24 +222,16 @@ export interface NutritionGoal {
   carbs_target_g: number;
   fat_target_g: number;
   fiber_target_g: number;
-  hydration_target_ml: number;
   start_date: string;
 }
 
-// ─── Goal and Water Cache Helpers ─────────────────────────────────────────────
+// ─── Goal Cache Helpers ─────────────────────────────────────────────
 
 function goalCacheKey(date: string, userId: number | string) {
   return `goal_date_${date}_${userId}`;
 }
 function goalFetchedKey(date: string, userId: number | string) {
   return `goal_fetched_${date}_${userId}`;
-}
-
-function waterCacheKey(date: string, userId: number | string) {
-  return `water_date_${date}_${userId}`;
-}
-function waterFetchedKey(date: string, userId: number | string) {
-  return `water_fetched_${date}_${userId}`;
 }
 
 function getGoalCache(date: string, userId: number | string): NutritionGoal | null {
@@ -261,27 +253,6 @@ function invalidateGoalCache(date: string, userId: number | string): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(goalCacheKey(date, userId));
   localStorage.removeItem(goalFetchedKey(date, userId));
-}
-
-function getWaterCache(date: string, userId: number | string): { logs: any[]; total_ml: number } | null {
-  if (typeof window === 'undefined') return null;
-  const fetched = localStorage.getItem(waterFetchedKey(date, userId));
-  if (fetched !== getTodayDateStr()) return null;
-  const raw = localStorage.getItem(waterCacheKey(date, userId));
-  if (!raw) return null;
-  try { return JSON.parse(raw) as { logs: any[]; total_ml: number }; } catch { return null; }
-}
-
-function setWaterCache(date: string, userId: number | string, data: { logs: any[]; total_ml: number }): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(waterCacheKey(date, userId), JSON.stringify(data));
-  localStorage.setItem(waterFetchedKey(date, userId), getTodayDateStr());
-}
-
-function invalidateWaterCache(date: string, userId: number | string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(waterCacheKey(date, userId));
-  localStorage.removeItem(waterFetchedKey(date, userId));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -333,7 +304,6 @@ export interface GoalCalculationResult {
   protein_g: number;
   fat_g: number;
   carbs_g: number;
-  hydration_ml: number;
 }
 
 export async function calculateGoalTargets(params: GoalCalculationParams): Promise<GoalCalculationResult> {
@@ -353,7 +323,6 @@ export async function saveNutritionGoal(params: GoalCalculationParams & GoalCalc
             protein_target_g: params.protein_g,
             carbs_target_g: params.carbs_g,
             fat_target_g: params.fat_g,
-            hydration_target_ml: params.hydration_ml,
         }),
     });
     
@@ -378,44 +347,7 @@ export async function saveUserMetric(metrics: Partial<MetricData>): Promise<void
   });
 }
 
-export async function fetchWaterDaily(date: string, forceRefresh = false): Promise<{ logs: any[]; total_ml: number }> {
-    const userId = getUserIdFromToken() ?? 'anon';
 
-  if (forceRefresh) {
-    invalidateWaterCache(date, userId);
-  }
-
-    // Try cache first
-  const cached = forceRefresh ? null : getWaterCache(date, userId);
-    if (cached) {
-        console.log('[fetchWaterDaily] served from cache', { date });
-        return cached;
-    }
-
-    try {
-        const data = await apiFetch<{ logs: any[]; total_ml: number }>(`/nutrition/water?date=${date}`);
-        if (data) {
-            setWaterCache(date, userId, data);
-        }
-        return data ?? { logs: [], total_ml: 0 };
-    } catch (error) {
-        console.error("Failed to fetch water daily", error);
-        return { logs: [], total_ml: 0 };
-    }
-}
-
-export async function logWater(amount_ml: number, date?: string): Promise<void> {
-    const userId = getUserIdFromToken() ?? 'anon';
-    const targetDate = date ?? getTodayDateStr();
-
-    await apiFetch(`/nutrition/water`, {
-        method: "POST",
-        body: JSON.stringify({ amount_ml, date: targetDate }),
-    });
-
-    // Invalidate water cache for the target date
-    invalidateWaterCache(targetDate, userId);
-}
 
 
 /** Single food in GET /meals/[id] response (data.foods[]) */

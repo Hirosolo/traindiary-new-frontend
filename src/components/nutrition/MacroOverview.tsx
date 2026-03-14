@@ -8,7 +8,6 @@ interface MacroData {
   fats: number;
   fiber: number;
   calories: number;
-  water: number;
 }
 
 interface MacroOverviewProps {

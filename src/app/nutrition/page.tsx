@@ -18,11 +18,8 @@ import {
   fetchMealDetails,
   updateMealsMonthCache,
   ApiMeal,
-  fetchWaterDaily,
-  logWater,
   saveUserMetric,
 } from "@/lib/api/nutrition";
-import WaterTracker from "@/components/nutrition/WaterTracker";
 import { motion, AnimatePresence } from "framer-motion";
 
 
@@ -61,11 +58,11 @@ export default function NutritionPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [macros, setMacros] = useState({
-    calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0, water: 2500
+    calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0
   });
 
   const [goals, setGoals] = useState({
-    calories: 2800, protein: 220, carbs: 350, fats: 80, fiber: 40, water: 3500
+    calories: 2800, protein: 220, carbs: 350, fats: 80, fiber: 40
   });
 
   const weekDays = useMemo(() => {
@@ -111,8 +108,7 @@ export default function NutritionPage() {
               protein: goalResponse.protein_target_g,
               carbs: goalResponse.carbs_target_g,
               fats: goalResponse.fat_target_g,
-              fiber: goalResponse.fiber_target_g,
-              water: goalResponse.hydration_target_ml
+              fiber: goalResponse.fiber_target_g
           });
       }
 
@@ -130,13 +126,8 @@ export default function NutritionPage() {
           protein: acc.protein + m.protein,
           carbs: acc.carbs + m.carbs,
           fats: acc.fats + m.fats,
-          fiber: acc.fiber + m.fiber,
-          water: acc.water
-      }), { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0, water: 0 });
-
-      // 4. Fetch Water
-    const waterData = await fetchWaterDaily(dateStr, forceRefresh);
-      dailyTotals.water = waterData.total_ml;
+          fiber: acc.fiber + m.fiber
+      }), { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 });
 
       setMacros(dailyTotals);
     } catch (e) {
@@ -278,25 +269,8 @@ export default function NutritionPage() {
         </section>
 
         {/* DAILY OVERVIEW */}
-        <div className="grid lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-             <MacroOverview current={macros} goals={goals} />
-          </div>
-          <div className="lg:col-span-1">
-              <WaterTracker 
-                  currentMl={macros.water} 
-                  goalMl={goals.water} 
-                  onAddWater={async (amount) => {
-                      try {
-                          const dateStr = selectedDate.toISOString().split('T')[0];
-                          await logWater(amount, dateStr);
-                          loadDailyData();
-                      } catch (e) {
-                          setErrorMessage("Failed to log hydration");
-                      }
-                  }} 
-              />
-          </div>
+        <div className="w-full">
+            <MacroOverview current={macros} goals={goals} />
         </div>
 
         <div className="grid grid-cols-1 gap-8">
